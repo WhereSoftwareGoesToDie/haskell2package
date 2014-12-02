@@ -37,6 +37,7 @@ EOF
 ) >> m4defs
 
 m4 m4defs TEMPLATE.spec > $ROOT/${JOB_NAME}.spec
+cat $ROOT/${JOB_NAME}.spec
 
 SRCS=$(cat anchor_github_deps)
 for x in $SRCS; do
