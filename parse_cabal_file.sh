@@ -12,16 +12,37 @@ if [ ! -f "$CABAL_FILE" ] ; then
 	exit 2
 fi
 
-
 #echo "Found $CABAL_FILE"
 
-PKG_NAME=$( grep "^name:"     "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
-PKG_VER=$(  grep "^version:"  "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
-PKG_SYN=$(  grep "^synopsis:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_NAME=$(  grep -i "^name:"        "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_VER=$(   grep -i "^version:"     "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_SYN=$(   grep -i "^synopsis:"    "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_DESC=$(  grep -i "^description:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_EXECS=$( grep -i "^executable"   "$CABAL_FILE" | awk '{print $2}')
 
-#echo "Package name is $PKG_NAME"
-#echo "Package version is $PKG_VER"
-#echo "Package synopsis is $PKG_SYN"
+#Dump version into file for rest of build process
+echo $PKG_VER > pkg_ver
+
+COPY_STRINGS=""
+for x in $PKG_EXECS; do
+    COPY_STRINGS=${COPY_STRINGS}"cp -v dist/build/${x}/${x} %{buildroot}%{_bindir}
+"
+done
+
+SOURCES=$(comm -12 cabal-build-deps <(sort repos.list) | grep -v ${PROJECT_NAME})
+let i=1
+for x in $SOURCES; do
+    print $x
+    SANDBOX_STRINGS=${SANDBOX_STRINGS}"cabal sandbox add-source ../${x}
+"
+    SETUP_STRINGS=${SETUP_STRINGS}"%setup -n ${x} -T -D -b ${i}
+"
+    SRC_STRINGS=${SRC_STRINGS}"Source${i}:	${x}.tar.gz
+"
+    (( i += 1 ))
+done
+
+echo $SOURCES > anchor_github_deps
 
 (cat <<EOF
 dnl -*- m4 -*-
@@ -29,5 +50,11 @@ changequote(<<, >>)dnl
 dnl
 define(<<NAME>>, <<${PKG_NAME}>>)dnl
 define(<<VERSION>>, <<${PKG_VER}>>)dnl
+define(<<SUMMARY>>, <<${PKG_SYN}>>)dnl
+define(<<DESCRIPTION>>, <<${PKG_DESC}>>)dnl
+define(<<COPYS>>, <<${COPY_STRINGS}>>)dnl
+define(<<SRCS>>, <<${SRC_STRINGS}>>)dnl
+define(<<ADD_SRCS>>, <<${SANDBOX_STRINGS}>>)dnl
+define(<<SETUP>>, <<${SETUP_STRINGS}>>)dnl
 EOF
-) | m4 - TEMPLATE.spec
+) > m4defs

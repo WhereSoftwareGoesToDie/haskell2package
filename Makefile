@@ -1,7 +1,7 @@
 .PHONY: repos.list
 
 # Testing for now
-borel.rpm:
+vaultaire-collector-ceilometer.rpm:
 
 repos.list:
 	@python anchor_repos.py
