@@ -7,7 +7,9 @@ sudo yum update -y
 sudo yum install -y python-requests m4
 
 python anchor_repos.py
+cat repos.list
 ./find_cabal_build_deps.sh "${JOB_NAME}.cabal" > cabal-build-deps
+cat cabal-build-deps
 ./parse_cabal_file.sh "${JOB_NAME}"
 
 VERSION=$(cat pkg_ver)
