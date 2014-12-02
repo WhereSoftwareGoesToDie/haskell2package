@@ -1,2 +1,4 @@
 borel.cabal-build-deps
 repos.list
+pkg_ver
+cabal-build-deps
