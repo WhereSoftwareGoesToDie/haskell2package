@@ -39,7 +39,7 @@ COPYS()
 %files
 %defattr(-,root,root,-)
 
-%{_bindir/%{name}
+%{_bindir}/%{name}
 
 %changelog
 Automatically generated spec file
