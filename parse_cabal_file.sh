@@ -22,3 +22,12 @@ PKG_SYN=$(  grep "^synopsis:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+
 #echo "Package name is $PKG_NAME"
 #echo "Package version is $PKG_VER"
 #echo "Package synopsis is $PKG_SYN"
+
+(cat <<EOF
+dnl -*- m4 -*-
+changequote(<<, >>)dnl
+dnl
+define(<<NAME>>, <<${PKG_NAME}>>)dnl
+define(<<VERSION>>, <<${PKG_VER}>>)dnl
+EOF
+) | m4 - TEMPLATE.spec
