@@ -3,6 +3,9 @@ set -eux
 
 export LANG=en_US.UTF-8
 
+sudo yum update -y
+sudo yum install -y python-requests
+
 python anchor_repos.py
 ./find_cabal_build_deps.sh "${JOB_NAME}.cabal" > cabal-build-deps
 ./parse_cabal_file.sh "${JOB_NAME}"
@@ -16,7 +19,7 @@ echo "BUILDING VERSION ${VERSION} - ${BUILD_NUMBER}"
 echo
 
 # Pre
-sudo yum update -y
+
 BUILD_REQS=""
 RUN_REQS=""
 for x in $SYS_DEPS; do
