@@ -36,8 +36,6 @@ def write_repos_to_output_file(repos):
 
 def build_auth_header():
     token = os.environ.get('OAUTH_TOKEN')
-    print(token)
-    print(os.environ)
     return { 'Authorization': "token {}".format(token) }
 
 
@@ -52,8 +50,11 @@ def main():
         # If that occurs, you'll get no listing, potentially after doing a
         # bunch of work. C'est la vie.
         r = requests.get(next_url, headers=build_auth_header())
+        print(r.status_code)
+        rj = r.json()
+        print(rj)
 
-        org_repos += get_repos_from_org_listing( r.json() )
+        org_repos += get_repos_from_org_listing(rj)
         link_header = r.headers['link']
         links = parse_github_http_link_header(link_header)
         next_url = links.get('next')
