@@ -13,7 +13,6 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:  ghc >= 7.8.3
 BuildRequires:  cabal-install
 BUILD_REQS()
-Requires:	
 RUN_REQS()
 
 %description
