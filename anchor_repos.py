@@ -16,7 +16,7 @@ def parse_github_http_link_header(header):
     links = {}
     link_chunks = header.split(', ')
     for link in link_chunks:
-        URL, rest = link.split('; ', 1)
+        URL,rest = link.split('; ', 1)
         URL = URL.strip('<>')
         # Overkill, aeh.
         kv = dict([ tuple([y.strip('"') for y in x.split('=')]) for x in rest.split('; ') ])
@@ -25,6 +25,11 @@ def parse_github_http_link_header(header):
 
 def get_repos_from_org_listing(j):
     return [ x['name'] for x in j ]
+
+def write_repos_to_output_file(repos):
+    with open(OUTPUT_FILE, 'w') as f:
+        for repo in repos:
+            f.write("{}\n".format(repo))
 
 def get_github_creds_from_env():
     gh_user = os.environ.get('GH_USER')
@@ -51,7 +56,7 @@ def main(argv=None):
         next_url = links.get('next')
 
     org_repos.sort()
-    print(org_repos)
+    write_repos_to_output_file(org_repos)
     return 0
 
 

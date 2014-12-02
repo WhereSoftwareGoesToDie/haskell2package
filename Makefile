@@ -3,8 +3,8 @@
 # Testing for now
 borel.rpm:
 
-repos.list:
-	@python anchor_repos.py | sort > $@
+repos.list: repos.json
+	@python anchor_repos.py
 
 
 %.rpm: %.cabal-build-deps
