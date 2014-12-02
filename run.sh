@@ -27,7 +27,7 @@ for x in $SYS_DEPS; do
 "
     RUN_REQS=${RUN_REQS}"Requires: ${x}
 "
-    sudo yum install -y ${x}
+    sudo yum install -y ${x}-devel
 done
 
 (cat <<EOF
