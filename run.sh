@@ -8,7 +8,6 @@ python anchor_repos.py
 ./parse_cabal_file.sh "${JOB_NAME}"
 
 VERSION=$(cat pkg_ver)
-#ROOT=$(realpath $(pwd))
 ROOT=$(pwd)
 SYS_DEPS=$@
 
