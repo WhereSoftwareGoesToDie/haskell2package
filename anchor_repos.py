@@ -38,7 +38,6 @@ def build_auth_header():
 
 def main(argv=None):
     org_repos = []
-    gh_credentials = get_github_creds_from_env()
 
     next_url = ORG_REPOS_URL
     while next_url:
