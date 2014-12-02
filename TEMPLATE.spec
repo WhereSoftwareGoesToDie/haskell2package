@@ -42,4 +42,5 @@ COPYS()
 %{_bindir}/%{name}
 
 %changelog
-Automatically generated spec file
+* CHANGELOG_HEADING()
+- Automated RPM release

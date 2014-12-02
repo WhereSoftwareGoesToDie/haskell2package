@@ -18,7 +18,9 @@ PKG_NAME=$(  grep -i "^name:"        "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:bl
 PKG_VER=$(   grep -i "^version:"     "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 PKG_SYN=$(   grep -i "^synopsis:"    "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 PKG_DESC=$(  grep -i "^description:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_MAINT=$( grep -i "^maintainer:"  "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 PKG_EXECS=$( grep -i "^executable"   "$CABAL_FILE" | awk '{print $2}')
+CHANGELOG_DATE=$(date '+%a %b %d %Y')
 
 #Dump version into file for rest of build process
 echo $PKG_VER > pkg_ver
@@ -32,7 +34,6 @@ done
 SOURCES=$(comm -12 cabal-build-deps <(sort repos.list) | grep -v ${PROJECT_NAME})
 let i=1
 for x in $SOURCES; do
-    print $x
     SANDBOX_STRINGS=${SANDBOX_STRINGS}"cabal sandbox add-source ../${x}
 "
     SETUP_STRINGS=${SETUP_STRINGS}"%setup -n ${x} -T -D -b ${i}
@@ -56,5 +57,6 @@ define(<<COPYS>>, <<${COPY_STRINGS}>>)dnl
 define(<<SRCS>>, <<${SRC_STRINGS}>>)dnl
 define(<<ADD_SRCS>>, <<${SANDBOX_STRINGS}>>)dnl
 define(<<SETUP>>, <<${SETUP_STRINGS}>>)dnl
+define(<<CHANGELOG_HEADING>>, <<${CHANGELOG_DATE} ${PKG_MAINT} ${PKG_VER}-0.0anchor${BUILD_NUMBER}>>)dnl
 EOF
 ) > m4defs
