@@ -38,9 +38,7 @@ mkdir -p %{buildroot}%{_bindir}
 COPYS()
 %files
 %defattr(-,root,root,-)
-
-%{_bindir}/%{name}
-
+FILES()   
 %changelog
 * CHANGELOG_HEADING()
 - Automated RPM release

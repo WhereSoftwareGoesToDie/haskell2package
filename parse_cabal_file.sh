@@ -26,8 +26,11 @@ CHANGELOG_DATE=$(date '+%a %b %d %Y')
 echo $PKG_VER > pkg_ver
 
 COPY_STRINGS=""
+BIN_STRINGS=""
 for x in $PKG_EXECS; do
     COPY_STRINGS=${COPY_STRINGS}"cp -v dist/build/${x}/${x} %{buildroot}%{_bindir}
+"
+    BIN_STRINGS=${BIN_STRINGS}"%{_bindir}/${x}
 "
 done
 
@@ -54,6 +57,7 @@ define(<<VERSION>>, <<${PKG_VER}>>)dnl
 define(<<SUMMARY>>, <<${PKG_SYN}>>)dnl
 define(<<DESCRIPTION>>, <<${PKG_DESC}>>)dnl
 define(<<COPYS>>, <<${COPY_STRINGS}>>)dnl
+define(<<FILES>>, <<${BIN_STRINGS}>>)dnl
 define(<<SRCS>>, <<${SRC_STRINGS}>>)dnl
 define(<<ADD_SRCS>>, <<${SANDBOX_STRINGS}>>)dnl
 define(<<SETUP>>, <<${SETUP_STRINGS}>>)dnl
