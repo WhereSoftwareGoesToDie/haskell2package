@@ -3,10 +3,8 @@ set -eux
 
 export LANG=en_US.UTF-8
 
-echo $OAUTH_TOKEN
-
 sudo yum update -y
-sudo yum install -y python-requests
+sudo yum install -y python-requests m4
 
 python anchor_repos.py
 ./find_cabal_build_deps.sh "${JOB_NAME}.cabal" > cabal-build-deps
