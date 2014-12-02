@@ -13,17 +13,12 @@ if [ ! -f "$CABAL_FILE" ] ; then
 fi
 
 
-echo "Found $CABAL_FILE"
+#echo "Found $CABAL_FILE"
 
 PKG_NAME=$( grep "^name:"     "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 PKG_VER=$(  grep "^version:"  "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 PKG_SYN=$(  grep "^synopsis:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 
-#[ -z "$PKG_SYN" ] && echo "synopsis is empty"
-
-echo "Package name is $PKG_NAME"
-echo "Package version is $PKG_VER"
-echo "Package synopsis is $PKG_SYN"
-
-echo "We're gonna need these deps:"
-cat "${PROJECT_NAME}.cabal-build-deps"
+#echo "Package name is $PKG_NAME"
+#echo "Package version is $PKG_VER"
+#echo "Package synopsis is $PKG_SYN"
