@@ -3,6 +3,8 @@ set -eux
 
 export LANG=en_US.UTF-8
 
+echo $OAUTH_TOKEN
+
 sudo yum update -y
 sudo yum install -y python-requests
 
