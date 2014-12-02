@@ -3,7 +3,7 @@
 # Testing for now
 borel.rpm:
 
-repos.list: repos.json
+repos.list:
 	@python anchor_repos.py
 
 
