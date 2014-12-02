@@ -1,15 +1,13 @@
-.PHONY: repos.list parse_cabal
+.PHONY: repos.list
 
 repos.list: repos.json
 	@python anchor_repos.py
 
-parse_cabal:
-	@./parse_cabal_file.sh
 
 %.rpm: %.cabal-build-deps
 	@echo "Making $@"
 	@echo "Do something with $^"
-	cat $^
+	@./parse_cabal_file.sh $(patsubst %.rpm,%,$@)
 
 %.cabal-build-deps: %.cabal
 	@echo "Making $@"

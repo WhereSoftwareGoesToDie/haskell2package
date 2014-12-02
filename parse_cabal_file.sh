@@ -1,31 +1,29 @@
 #!/bin/bash
 
-if ! ls *.cabal 2>/dev/null >/dev/null ; then
-	echo "No .cabal files found"
+if [ $# -ne 1 ] ; then
+	echo "Need a single project name as an argument."
 	exit 2
 fi
 
-# `find` would be nicer: http://stackoverflow.com/a/4264351/806927
-for CABAL in *.cabal ; do
-	echo "Found $CABAL"
+PROJECT_NAME=$1
+CABAL_FILE="${PROJECT_NAME}.cabal"
+if [ ! -f "$CABAL_FILE" ] ; then
+	echo "Cabal file ${CABAL_FILE} does not exist."
+	exit 2
+fi
 
-	PKG_NAME=$( grep "^name:"     "$CABAL" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
-	PKG_VER=$(  grep "^version:"  "$CABAL" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
-	PKG_SYN=$(  grep "^synopsis:" "$CABAL" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 
-	#[ -z "$PKG_SYN" ] && echo "synopsis is empty"
+echo "Found $CABAL_FILE"
 
-	echo "Package name is $PKG_NAME"
-	echo "Package version is $PKG_VER"
-	echo "Package synopsis is $PKG_SYN"
+PKG_NAME=$( grep "^name:"     "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_VER=$(  grep "^version:"  "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
+PKG_SYN=$(  grep "^synopsis:" "$CABAL_FILE" | sed -r 's/^[a-zA-Z-]+:[[:blank:]]+//' )
 
-	sed -r -n -e '/^  build-depends:     /,/^$/ {
-		s/^  build-depends: / / ;
-		s/^ +// ;
-		s/ .*|,// ;
-		/./p
-	}' "$CABAL" | sort | uniq > cabal_build_deps
+#[ -z "$PKG_SYN" ] && echo "synopsis is empty"
 
-	# Definitely only ever parse one .cabal file
-	break
-done
+echo "Package name is $PKG_NAME"
+echo "Package version is $PKG_VER"
+echo "Package synopsis is $PKG_SYN"
+
+echo "We're gonna need these deps:"
+cat "${PROJECT_NAME}.cabal-build-deps"
