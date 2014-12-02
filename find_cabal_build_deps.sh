@@ -12,8 +12,8 @@ if [ ! -f "$CABAL_FILE" ] ; then
 fi
 
 
-sed -r -n -e '/^  build-depends:     /,/^$/ {
-	s/^  build-depends: / / ;
+sed -r -n -e '/^ +build-depends:/I,/^$/ {
+	s/^ +build-depends:// ;
 	s/^ +// ;
 	s/ .*|,// ;
 	/./p
