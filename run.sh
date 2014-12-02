@@ -56,7 +56,7 @@ rpmdev-setuptree
 # Make rpmbuild stop with the debuginfo packages.
 
 echo '%debug_package %{nil}' > $HOME/.rpmmacros
-rpmbuild -bb --define "build_number $BUILDNO" --define "dist .el7" \
+rpmbuild -bb --define "build_number $BUILD_NUMBER" --define "dist .el7" \
         $ROOT/${JOB_NAME}.spec
 
 mkdir packages
