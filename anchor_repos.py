@@ -35,7 +35,8 @@ def write_repos_to_output_file(repos):
             f.write("{}\n".format(repo))
 
 def build_auth_header():
-    token = os.environ.get('OAUTH_TOKEN')
+    token = os.environ.get('OAUTH_TOKEN', '').strip()
+    print "You got a token! {}".format(token)
     return { 'Authorization': "token {}".format(token) }
 
 
