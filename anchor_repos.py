@@ -31,10 +31,9 @@ def write_repos_to_output_file(repos):
         for repo in repos:
             f.write("{}\n".format(repo))
 
-def get_github_creds_from_env():
-    gh_user = os.environ.get('GH_USER')
-    gh_pass = os.environ.get('GH_PASS')
-    return (gh_user,gh_pass)
+def build_auth_header():
+    token = os.environ.get('GITHUB_AUTH_TOKEN')
+    return { 'Authorization': "token {}".format(token) }
 
 
 def main(argv=None):
@@ -48,7 +47,7 @@ def main(argv=None):
         # This get() can throw an exception if you hit the API request limit.
         # If that occurs, you'll get no listing, potentially after doing a
         # bunch of work. C'est la vie.
-        r = requests.get(next_url, auth=gh_credentials)
+        r = requests.get(next_url, headers=build_auth_header())
 
         org_repos += get_repos_from_org_listing( r.json() )
         link_header = r.headers['link']
