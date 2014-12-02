@@ -18,7 +18,7 @@ RUN_REQS()
 %description
 DESCRIPTION()
 %prep
-SETUP()%setup -T -D -b 0
+SETUP()%setup -T -D -n -b 0
 
 %build
 export LC_ALL=en_US.UTF-8
