@@ -35,7 +35,7 @@ def write_repos_to_output_file(repos):
             f.write("{}\n".format(repo))
 
 def build_auth_header():
-    token = os.environ.get('GITHUB_AUTH_TOKEN')
+    token = os.environ.get('OAUTH_TOKEN')
     return { 'Authorization': "token {}".format(token) }
 
 
