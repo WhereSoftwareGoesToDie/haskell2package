@@ -1,26 +1,29 @@
+# pylint: disable=line-too-long
+# pylint: disable=bad-whitespace
+# pylint: disable=invalid-name
+# pylint: disable=superfluous-parens
+# pylint: disable=missing-docstring
+
 """Fetch a full list of the organisation's public repos, dump to a list."""
 
 import sys
 import os
 import requests
-from pprint import pprint as PP
 
 ORG_REPOS_URL = 'https://api.github.com/orgs/anchor/repos'
 OUTPUT_FILE = 'repos.list'
-
-# We always assume that a link starts with  <URL_HERE>
-SAMPLE_LINK_HEADER = '''<https://api.github.com/organizations/146304/repos?page=2>; rel="next", <https://api.github.com/organizations/146304/repos?page=4>; rel="last"'''
 
 
 def parse_github_http_link_header(header):
     links = {}
     link_chunks = header.split(', ')
     for link in link_chunks:
-        URL,rest = link.split('; ', 1)
-        URL = URL.strip('<>')
+        url, rest = link.split('; ', 1)
+        url = url.strip('<>')
         # Overkill, aeh.
-        kv = dict([ tuple([y.strip('"') for y in x.split('=')]) for x in rest.split('; ') ])
-        links[kv['rel']] = URL
+        # Sample link header = '''<https://api.github.com/organizations/146304/repos?page=2>; rel="next", <https://api.github.com/organizations/146304/repos?page=4>; rel="last"'''
+        other_keys = dict([ tuple([y.strip('"') for y in x.split('=')]) for x in rest.split('; ') ])
+        links[other_keys['rel']] = url
     return links
 
 def get_repos_from_org_listing(j):
@@ -36,7 +39,7 @@ def build_auth_header():
     return { 'Authorization': "token {}".format(token) }
 
 
-def main(argv=None):
+def main():
     org_repos = []
 
     next_url = ORG_REPOS_URL
