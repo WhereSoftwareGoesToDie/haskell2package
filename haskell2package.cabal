@@ -28,19 +28,13 @@ library
                        time,
                        old-locale,
                        transformers,
-                       directory
+                       directory,
+                       MissingH
   hs-source-dirs:      lib
 
 executable haskell2package
   main-is:             Main.hs
   build-depends:       base >=4.7,
-                       containers >=0.5,
-                       Cabal >=1.18,
-                       process >=1.2,
-                       github,
-                       mtl,
-                       time,
-                       old-locale,
                        haskell2package
 
   hs-source-dirs:      src

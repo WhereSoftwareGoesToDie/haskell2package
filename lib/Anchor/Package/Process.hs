@@ -10,6 +10,7 @@ import           Data.Maybe
 import           Data.Monoid
 import           Data.Set                              (Set)
 import qualified Data.Set                              as S
+import           Data.String.Utils
 import           Data.Time.Clock
 import           Data.Time.Format
 import           Data.Version
@@ -37,7 +38,7 @@ packageJenkins = do
     buildNoString <- getEnv "BUILD_NUMBER"
     target <- getEnv "JOB_NAME"
     homePath <- getEnv "HOME"
-    runPackager target buildNoString sysDeps token (act homePath)
+    runPackager target buildNoString sysDeps (fmap strip token) (act homePath)
   where
     act homePath = do
         PackagerInfo{..} <- ask
