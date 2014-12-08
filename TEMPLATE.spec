@@ -1,3 +1,4 @@
+dnl vim: ts=8
 Name:		NAME()
 Version:	VERSION()
 Release:	0.0anchor%{?build_number}%{!?build_number:1}%{?dist}
@@ -10,9 +11,13 @@ Source0:	%{name}.tar.gz
 SRCS()
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
-BuildRequires:  ghc >= 7.8.3
-BuildRequires:  cabal-install
+BuildRequires:	ghc >= 7.8.3
+BuildRequires:	cabal-install
+BuildRequires:	zlib-devel
+BuildRequires:	gmp-devel
 BUILD_REQS()
+Requires:	zlib
+Requires:	gmp
 RUN_REQS()
 
 %description
