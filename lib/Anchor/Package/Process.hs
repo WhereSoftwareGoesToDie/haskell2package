@@ -41,9 +41,6 @@ packageJenkins = do
   where
     act homePath = do
         PackagerInfo{..} <- ask
-        updateRepos
-
-        installExtras
         installSysDeps
         spec <- generateSpecFile "TEMPLATE.spec"
         liftIO $ do
@@ -62,9 +59,6 @@ packageJenkins = do
                     ]
             createDirectoryIfMissing True "packages" 
             callProcess "mv" [homePath <> "rpmbuild/RPMS/x86_64/*.rpm", "packages"]
-
-    updateRepos    = liftIO $ callProcess "sudo" ["yum", "update",  "-y"]       
-    installExtras  = liftIO $ callProcess "sudo" ["yum", "install", "-y", "python-requests", "m4"]
     installSysDeps =
         fmap (S.toList . anchorDeps) ask >>= \deps -> liftIO $ forM_ deps $
             \dep -> callProcess "sudo" ["yum", "install", "-y", dep <> "-devel"]
