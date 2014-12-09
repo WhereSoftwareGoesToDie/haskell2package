@@ -45,7 +45,7 @@ packageJenkins = do
         installSysDeps
         spec <- generateSpecFile "/usr/share/haskell2package/TEMPLATE.spec"
         liftIO $ do
-            let workspacePath = homePath <> "/workspace"
+            workspacePath <- getEnv "WORKSPACE"
             let specPath = workspacePath <> "/" <> target <> ".spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath <> "/rpmbuild/SOURCES/")
@@ -60,8 +60,8 @@ packageJenkins = do
                     , "dist .el7"
                     , specPath
                     ]
-            createDirectoryIfMissing True "packages"
-            void $ system $ "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm packages/"
+            createDirectoryIfMissing True $ workspacePath <> "/packages"
+            void $ system $ "cp " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath <> "/packages/"
     installSysDeps = do
         deps <- S.toList <$> anchorDeps <$> ask
         liftIO $ forM_ deps $ \dep ->
