@@ -43,12 +43,13 @@ packageJenkins = do
     act homePath = do
         PackagerInfo{..} <- ask
         installSysDeps
-        spec <- generateSpecFile (homePath <> "/workspace/TEMPLATE.spec")
+        spec <- generateSpecFile "/usr/share/haskell2package/TEMPLATE.spec"
         liftIO $ do
-            let specPath = homePath <> "/workspace/" <> target <> ".spec"
+            let workspacePath = homePath <> "/workspace"
+            let specPath = workspacePath <> "/" <> target <> ".spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath <> "/rpmbuild/SOURCES/")
-            callProcess "mv" [ homePath <> "/workspace/*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
+            callProcess "mv" [ workspacePath <> "/*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
             callProcess "rpmdev-setuptree" []
             writeFile (homePath <> "/.rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"

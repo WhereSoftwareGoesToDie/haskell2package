@@ -36,7 +36,7 @@ generateM4 = do
             , ("SRCS",        srcStrings)
             , ("SETUP",       setupStrings)
             , ("COPYS",       generateCopyStrings executableNames)
-            , ("FILES",       generateBinStrings  executableNames)
+            , ("FILES",       generateFileStrings executableNames)
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
@@ -49,10 +49,14 @@ generateM4 = do
                , "dnl"
                ]
     generateCopyStrings :: [String] -> String
-    generateCopyStrings = unlines . map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
+    generateCopyStrings xs =
+        unlines $ "cp -a files/* %{buildroot}%{_datadir}/%{name}/" :
+        map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}") xs
 
-    generateBinStrings :: [String] -> String
-    generateBinStrings = unlines . map (\x -> "%{_bindir}/" <> x)
+    generateFileStrings :: [String] -> String
+    generateFileStrings xs =
+        unlines $ "%{_datadir}/*" :
+        map (\x -> "%{_bindir}/" <> x) xs
 
     generateSandboxStrings :: [String] -> String
     generateSandboxStrings = unlines . map (\x -> "cabal sandbox add source ../" <> x)

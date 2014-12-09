@@ -40,6 +40,7 @@ cabal build
 
 %install
 mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_datadir}
 COPYS()
 %files
 %defattr(-,root,root,-)
