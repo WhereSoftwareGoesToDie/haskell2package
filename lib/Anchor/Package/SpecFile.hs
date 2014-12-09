@@ -50,14 +50,10 @@ generateM4 = do
                , "dnl"
                ]
     generateCopyStrings :: [String] -> String
-    generateCopyStrings xs =
-        unlines $ "cp -a files/* %{buildroot}%{_datadir}/%{name}/" :
-        map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}") xs
+    generateCopyStrings = unlines . map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
 
     generateFileStrings :: [String] -> String
-    generateFileStrings xs =
-        unlines $ "%{_datadir}/*" :
-        map (\x -> "%{_bindir}/" <> x) xs
+    generateFileStrings = unlines . map (\x -> "%{_bindir}/" <> x)
 
     generateSandboxStrings :: [String] -> String
     generateSandboxStrings = unlines . map (\x -> "cabal sandbox add source ../" <> x)

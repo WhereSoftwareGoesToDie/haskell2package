@@ -40,11 +40,13 @@ cabal build
 
 %install
 mkdir -p %{buildroot}%{_bindir}
-mkdir -p %{buildroot}%{_datadir}
+mkdir -p %{buildroot}%{_datadir}/%{name}
+cp -a files/* %{buildroot}%{_datadir}/%{name}/
 COPYS()
 %files
 %defattr(-,root,root,-)
-FILES()   
+%{_datadir}/*
+FILES()
 %changelog
 * CHANGELOG_HEADING()
 - Automated RPM release
