@@ -90,6 +90,7 @@ runPackager target buildNoString sysDeps token (Packager act) = do
                     (map fst $ condExecutables gpd)
     cloneAndFindDeps anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
+        archiveCommand target
         fst <$> execStateT (loop startingDeps) (startingDeps, S.empty)
       where
         loop missing = do
