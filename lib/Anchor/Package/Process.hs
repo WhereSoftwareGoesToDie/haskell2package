@@ -49,7 +49,7 @@ packageJenkins = do
             let specPath = workspacePath <> "/" <> target <> ".spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath <> "/rpmbuild/SOURCES/")
-            system ("mv " <> workspacePath <> "../*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
+            system ("mv " <> workspacePath <> "/../*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
             callProcess "rpmdev-setuptree" []
             writeFile (homePath <> "/.rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"
