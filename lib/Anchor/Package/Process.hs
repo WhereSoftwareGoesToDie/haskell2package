@@ -61,7 +61,7 @@ packageJenkins = do
                     , specPath
                     ]
             createDirectoryIfMissing True (homePath <> "/packages")
-            let moveLine = "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> homePath <> "/packages"
+            let moveLine = "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> homePath <> "/packages/"
             putStrLn moveLine
             void $ system moveLine
     installSysDeps = do
