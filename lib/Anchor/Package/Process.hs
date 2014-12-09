@@ -49,9 +49,7 @@ packageJenkins = do
             let specPath = workspacePath <> "/" <> target <> ".spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath <> "/rpmbuild/SOURCES/")
-            callProcess "pwd" []
-            callProcess "ls" [ "-lh", workspacePath ]
-            callProcess "mv" [ workspacePath <> "/*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
+            system ("mv " <> workspacePath <> "/*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
             callProcess "rpmdev-setuptree" []
             writeFile (homePath <> "/.rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"
@@ -62,11 +60,12 @@ packageJenkins = do
                     , "dist .el7"
                     , specPath
                     ]
-            createDirectoryIfMissing True (homePath <> "packages")
-            callProcess "mv" [homePath <> "rpmbuild/RPMS/x86_64/*.rpm", homePath <> "packages"]
-    installSysDeps =
-        fmap (S.toList . anchorDeps) ask >>= \deps -> liftIO $ forM_ deps $
-            \dep -> callProcess "sudo" ["yum", "install", "-y", dep <> "-devel"]
+            createDirectoryIfMissing True (homePath <> "/packages")
+            void $ system ("mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> homePath <> "/packages")
+    installSysDeps = do
+        deps <- S.toList <$> anchorDeps <$> ask
+        liftIO $ forM_ deps $ \dep ->
+            callProcess "sudo" ["yum", "install", "-y", dep <> "-devel"]
 
 runPackager :: String -> String -> Set String -> Maybe String -> Packager a -> IO a
 runPackager target buildNoString sysDeps token (Packager act) = do
