@@ -61,7 +61,9 @@ packageJenkins = do
                     , specPath
                     ]
             createDirectoryIfMissing True (homePath <> "/packages")
-            void $ system ("mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> homePath <> "/packages")
+            let moveLine = "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> homePath <> "/packages"
+            putStrLn moveLine
+            void $ system moveLine
     installSysDeps = do
         deps <- S.toList <$> anchorDeps <$> ask
         liftIO $ forM_ deps $ \dep ->
