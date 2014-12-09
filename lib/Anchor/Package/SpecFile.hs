@@ -40,6 +40,7 @@ generateM4 = do
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
+            , ("CHANGELOG_HEADING", changelogHeading)
             ]
     return $ unlines $ m4Header <> defines
   where
