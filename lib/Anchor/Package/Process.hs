@@ -60,8 +60,8 @@ packageJenkins = do
                     , "dist .el7"
                     , specPath
                     ]
-            createDirectoryIfMissing True (workspacePath <> "/packages")
-            void $ system $ "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath <> "/packages/"
+            createDirectoryIfMissing True "packages"
+            void $ system $ "mv " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm packages/"
     installSysDeps = do
         deps <- S.toList <$> anchorDeps <$> ask
         liftIO $ forM_ deps $ \dep ->
