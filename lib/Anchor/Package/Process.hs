@@ -63,9 +63,9 @@ packageJenkins = do
             createDirectoryIfMissing True $ workspacePath <> "/packages"
             void $ system $ "cp " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath <> "/packages/"
     installSysDeps = do
-        deps <- S.toList <$> sysDeps <$> ask
-        liftIO $ forM_ deps $ \dep ->
-            callProcess "sudo" ["yum", "install", "-y", dep <> "-devel"]
+        deps <- map (<> "-devel") <$> S.toList <$> sysDeps <$> ask
+        liftIO $ forM_ ("m4" : deps) $ \dep ->
+            callProcess "sudo" ["yum", "install", "-y", dep]
 
 runPackager :: String -> String -> Set String -> Maybe String -> Packager a -> IO a
 runPackager target buildNoString sysDeps token (Packager act) = do
