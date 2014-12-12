@@ -61,7 +61,7 @@ generateM4 = do
     generateSetupAndSourceStrings :: [String] -> (String, String)
     generateSetupAndSourceStrings xs =
         let f = unlines . map (\(x, ix) -> "Source" <> show ix <> ":\t" <> x <> ".tar.gz")
-            g = unlines . map (\(x, ix) -> "%setup -n " <> x <> "-T -D -b " <> show ix)
+            g = unlines . map (\(x, ix) -> "%setup -n " <> x <> " -T -D -b " <> show ix)
         in  (f &&& g) (zip xs [1..])
 
     generateBuildReqs :: [String] -> String
