@@ -55,7 +55,7 @@ packageJenkins = do
             callProcess "rpmbuild"
                     [ "-bb"
                     , "--define"
-                    , buildNoString
+                    , "build_number " <> buildNoString
                     , "--define"
                     , "dist .el7"
                     , specPath
