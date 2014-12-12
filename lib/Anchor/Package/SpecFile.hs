@@ -56,7 +56,7 @@ generateM4 = do
     generateFileStrings = unlines . map (\x -> "%{_bindir}/" <> x)
 
     generateSandboxStrings :: [String] -> String
-    generateSandboxStrings = unlines . map (\x -> "cabal sandbox add source ../" <> x)
+    generateSandboxStrings = unlines . map (\x -> "cabal sandbox add-source ../" <> x)
 
     generateSetupAndSourceStrings :: [String] -> (String, String)
     generateSetupAndSourceStrings xs =
