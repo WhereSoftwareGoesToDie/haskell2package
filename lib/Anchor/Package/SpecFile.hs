@@ -5,6 +5,7 @@ module Anchor.Package.SpecFile where
 import           Control.Arrow
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
+import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set               as S
 import           Data.Time.Clock
@@ -30,6 +31,7 @@ generateM4 = do
     let changelogHeading = generateChangelogHeading maintainerString versionString buildNoString dateString
     let defines = map generateDefineStatement
             [ ("NAME",        name)
+            , ("PKGNAME",     fromMaybe name packageName)
             , ("VERSION",     versionString)
             , ("SUMMARY",     synopsisString)
             , ("DESCRIPTION", descriptionString)

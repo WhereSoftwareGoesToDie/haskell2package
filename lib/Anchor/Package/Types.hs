@@ -19,6 +19,7 @@ data CabalInfo = CabalInfo
 data PackagerInfo = PackagerInfo
     { target        :: String
     , buildNoString :: String
+    , packageName   :: Maybe String
     , cabalInfo     :: CabalInfo
     , anchorRepos   :: Set String
     , sysDeps       :: Set String

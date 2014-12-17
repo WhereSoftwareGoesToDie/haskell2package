@@ -38,7 +38,8 @@ packageJenkins = do
     buildNoString <- getEnv "BUILD_NUMBER"
     target <- getEnv "JOB_NAME"
     homePath <- getEnv "HOME"
-    runPackager target buildNoString sysDeps (fmap strip token) (act homePath)
+    pkgName <- lookupEnv "H2P_PACKAGE_NAME"
+    runPackager target buildNoString pkgName sysDeps (fmap strip token) (act homePath)
   where
     act homePath = do
         PackagerInfo{..} <- ask
@@ -67,15 +68,22 @@ packageJenkins = do
         liftIO $ forM_ ("m4" : deps) $ \dep ->
             callProcess "sudo" ["yum", "install", "-y", dep]
 
-runPackager :: String -> String -> Set String -> Maybe String -> Packager a -> IO a
-runPackager target buildNoString sysDeps token (Packager act) = do
+runPackager :: String
+            -> String
+            -> Maybe String
+            -> Set String
+            -> Maybe String
+            -> Packager a
+            -> IO a
+runPackager target buildNoString pkgName sysDeps token (Packager act) = do
     anchorRepos <- getAnchorRepos
     cabalInfo   <- extractCabalDetails (cabalPath target)
     anchorDeps  <- cloneAndFindDeps anchorRepos
-    let packagerInfo = PackagerInfo target buildNoString cabalInfo anchorRepos sysDeps anchorDeps
+    let packagerInfo = PackagerInfo target buildNoString pkgName cabalInfo anchorRepos sysDeps anchorDeps
     runReaderT act packagerInfo
   where
     cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]
+
     getAnchorRepos =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
     extractCabalDetails fp = do
@@ -89,6 +97,7 @@ runPackager target buildNoString sysDeps token (Packager act) = do
                     (description pd)
                     (maintainer  pd)
                     (map fst $ condExecutables gpd)
+
     cloneAndFindDeps anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
@@ -105,6 +114,7 @@ runPackager target buildNoString sysDeps token (Packager act) = do
             let missing' = iterDeps `S.difference` fullDeps
             put (fullDeps `S.union` missing', S.empty)
             unless (S.null missing') $ loop missing'
+
         cloneCommand   pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "clone"
@@ -115,6 +125,7 @@ runPackager target buildNoString sysDeps token (Packager act) = do
                                     Nothing
                                     Nothing
                                     Nothing
+
         archiveCommand pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
@@ -128,6 +139,7 @@ runPackager target buildNoString sysDeps token (Packager act) = do
                                     Nothing
                                     Nothing
                                     Nothing
+
     findCabalBuildDeps fp anchorRepos = do
         gpd <- readPackageDescription deafening fp
         return $ S.intersection anchorRepos $ S.fromList $ concat $ concat
@@ -135,4 +147,5 @@ runPackager target buildNoString sysDeps token (Packager act) = do
             , map (extractDeps . snd) (condExecutables gpd)
             , map (extractDeps . snd) (condTestSuites gpd)
             ]
+
     extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints

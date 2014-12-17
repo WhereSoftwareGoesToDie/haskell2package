@@ -1,5 +1,5 @@
 dnl vim: ts=8
-Name:		NAME()
+Name:		PKGNAME()
 Version:	VERSION()
 Release:	0.0anchor%{?build_number}%{!?build_number:1}%{?dist}
 Summary:	SUMMARY()
@@ -7,9 +7,9 @@ Summary:	SUMMARY()
 Group:		Development/Libraries
 License:	BSD
 URL:		https://github.com/anchor/NAME()
-Source0:	%{name}.tar.gz
+Source0:	NAME().tar.gz
 SRCS()
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+BuildRoot:	%(mktemp -ud %{_tmppath}/NAME()-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	ghc >= 7.8.3
 BuildRequires:	cabal-install
@@ -23,7 +23,7 @@ RUN_REQS()
 %description
 DESCRIPTION()
 %prep
-SETUP()%setup -T -D -n %{name} -b 0
+SETUP()%setup -T -D -n NAME() -b 0
 
 %build
 export LC_ALL=en_US.UTF-8
@@ -42,7 +42,7 @@ cabal build
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_datadir}
 mkdir -p files
-cp -ar files %{buildroot}%{_datadir}/%{name}
+cp -a files %{buildroot}%{_datadir}/NAME()
 COPYS()
 %files
 %defattr(-,root,root,-)
