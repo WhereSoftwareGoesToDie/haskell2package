@@ -11,8 +11,6 @@ import           Data.Monoid
 import           Data.Set                              (Set)
 import qualified Data.Set                              as S
 import           Data.String.Utils
-import           Data.Text                             (Text)
-import qualified Data.Text                             as T
 import           Data.Time.Clock
 import           Data.Time.Format
 import           Data.Version
@@ -40,7 +38,7 @@ packageJenkins = do
     buildNoString <- getEnv "BUILD_NUMBER"
     target <- getEnv "JOB_NAME"
     homePath <- getEnv "HOME"
-    pkgName <- maybe Nothing (Just . T.pack) <$> lookupEnv "H2P_PACKAGE_NAME"
+    pkgName <- lookupEnv "H2P_PACKAGE_NAME"
     runPackager target buildNoString pkgName sysDeps (fmap strip token) (act homePath)
   where
     act homePath = do
@@ -72,7 +70,7 @@ packageJenkins = do
 
 runPackager :: String
             -> String
-            -> Maybe Text
+            -> Maybe String
             -> Set String
             -> Maybe String
             -> Packager a
@@ -85,6 +83,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
     runReaderT act packagerInfo
   where
     cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]
+
     getAnchorRepos =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
     extractCabalDetails fp = do
@@ -98,6 +97,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
                     (description pd)
                     (maintainer  pd)
                     (map fst $ condExecutables gpd)
+
     cloneAndFindDeps anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
