@@ -27,7 +27,8 @@ library
                        old-locale,
                        transformers,
                        directory,
-                       MissingH
+                       MissingH,
+                       text
   hs-source-dirs:      lib
   default-language:    Haskell2010
 

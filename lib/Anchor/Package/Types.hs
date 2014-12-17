@@ -6,6 +6,7 @@ import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.Set               (Set)
+import           Data.Text              (Text)
 
 data CabalInfo = CabalInfo
     { name              :: String
@@ -19,6 +20,7 @@ data CabalInfo = CabalInfo
 data PackagerInfo = PackagerInfo
     { target        :: String
     , buildNoString :: String
+    , packageName   :: Maybe Text
     , cabalInfo     :: CabalInfo
     , anchorRepos   :: Set String
     , sysDeps       :: Set String

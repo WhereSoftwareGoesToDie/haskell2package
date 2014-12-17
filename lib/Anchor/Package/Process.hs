@@ -11,6 +11,8 @@ import           Data.Monoid
 import           Data.Set                              (Set)
 import qualified Data.Set                              as S
 import           Data.String.Utils
+import           Data.Text                             (Text)
+import qualified Data.Text                             as T
 import           Data.Time.Clock
 import           Data.Time.Format
 import           Data.Version
@@ -38,7 +40,8 @@ packageJenkins = do
     buildNoString <- getEnv "BUILD_NUMBER"
     target <- getEnv "JOB_NAME"
     homePath <- getEnv "HOME"
-    runPackager target buildNoString sysDeps (fmap strip token) (act homePath)
+    pkgName <- maybe Nothing (Just . T.pack) <$> lookupEnv "H2P_PACKAGE_NAME"
+    runPackager target buildNoString pkgName sysDeps (fmap strip token) (act homePath)
   where
     act homePath = do
         PackagerInfo{..} <- ask
@@ -67,12 +70,18 @@ packageJenkins = do
         liftIO $ forM_ ("m4" : deps) $ \dep ->
             callProcess "sudo" ["yum", "install", "-y", dep]
 
-runPackager :: String -> String -> Set String -> Maybe String -> Packager a -> IO a
-runPackager target buildNoString sysDeps token (Packager act) = do
+runPackager :: String
+            -> String
+            -> Maybe Text
+            -> Set String
+            -> Maybe String
+            -> Packager a
+            -> IO a
+runPackager target buildNoString pkgName sysDeps token (Packager act) = do
     anchorRepos <- getAnchorRepos
     cabalInfo   <- extractCabalDetails (cabalPath target)
     anchorDeps  <- cloneAndFindDeps anchorRepos
-    let packagerInfo = PackagerInfo target buildNoString cabalInfo anchorRepos sysDeps anchorDeps
+    let packagerInfo = PackagerInfo target buildNoString pkgName cabalInfo anchorRepos sysDeps anchorDeps
     runReaderT act packagerInfo
   where
     cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]
