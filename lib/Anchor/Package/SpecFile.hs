@@ -30,7 +30,8 @@ generateM4 = do
     let (srcStrings, setupStrings) = generateSetupAndSourceStrings $ S.toList anchorDeps
     let changelogHeading = generateChangelogHeading maintainerString versionString buildNoString dateString
     let defines = map generateDefineStatement
-            [ ("NAME",        fromMaybe name packageName)
+            [ ("NAME",        name)
+            , ("PKGNAME",     fromMaybe name packageName)
             , ("VERSION",     versionString)
             , ("SUMMARY",     synopsisString)
             , ("DESCRIPTION", descriptionString)
