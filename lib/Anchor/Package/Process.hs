@@ -38,7 +38,8 @@ packageJenkins = do
     buildNoString <- getEnv "BUILD_NUMBER"
     target <- getEnv "JOB_NAME"
     homePath <- getEnv "HOME"
-    runPackager target buildNoString sysDeps (fmap strip token) (act homePath)
+    outputName <- fromMaybe target <$> lookupEnv "H2P_PACKAGE_NAME"
+    runPackager target outputName buildNoString sysDeps (fmap strip token) (act homePath)
   where
     act homePath = do
         PackagerInfo{..} <- ask
@@ -67,12 +68,12 @@ packageJenkins = do
         liftIO $ forM_ ("m4" : deps) $ \dep ->
             callProcess "sudo" ["yum", "install", "-y", dep]
 
-runPackager :: String -> String -> Set String -> Maybe String -> Packager a -> IO a
-runPackager target buildNoString sysDeps token (Packager act) = do
+runPackager :: String -> String -> String -> Set String -> Maybe String -> Packager a -> IO a
+runPackager target outputName buildNoString sysDeps token (Packager act) = do
     anchorRepos <- getAnchorRepos
     cabalInfo   <- extractCabalDetails (cabalPath target)
     anchorDeps  <- cloneAndFindDeps anchorRepos
-    let packagerInfo = PackagerInfo target buildNoString cabalInfo anchorRepos sysDeps anchorDeps
+    let packagerInfo = PackagerInfo target outputName buildNoString cabalInfo anchorRepos sysDeps anchorDeps
     runReaderT act packagerInfo
   where
     cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]

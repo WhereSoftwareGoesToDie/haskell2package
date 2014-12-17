@@ -18,6 +18,7 @@ data CabalInfo = CabalInfo
 
 data PackagerInfo = PackagerInfo
     { target        :: String
+    , outputName    :: String
     , buildNoString :: String
     , cabalInfo     :: CabalInfo
     , anchorRepos   :: Set String
