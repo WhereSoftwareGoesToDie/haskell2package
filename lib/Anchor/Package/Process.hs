@@ -114,6 +114,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
             let missing' = iterDeps `S.difference` fullDeps
             put (fullDeps `S.union` missing', S.empty)
             unless (S.null missing') $ loop missing'
+
         cloneCommand   pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "clone"
@@ -124,6 +125,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
                                     Nothing
                                     Nothing
                                     Nothing
+
         archiveCommand pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
@@ -137,6 +139,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
                                     Nothing
                                     Nothing
                                     Nothing
+
     findCabalBuildDeps fp anchorRepos = do
         gpd <- readPackageDescription deafening fp
         return $ S.intersection anchorRepos $ S.fromList $ concat $ concat
@@ -144,4 +147,5 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
             , map (extractDeps . snd) (condExecutables gpd)
             , map (extractDeps . snd) (condTestSuites gpd)
             ]
+
     extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints
