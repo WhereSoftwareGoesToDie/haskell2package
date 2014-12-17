@@ -1,4 +1,5 @@
 dnl vim: ts=8
+%define _rpmfilename %%{ARCH}/OUTPUT()-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
 Name:		NAME()
 Version:	VERSION()
 Release:	0.0anchor%{?build_number}%{!?build_number:1}%{?dist}

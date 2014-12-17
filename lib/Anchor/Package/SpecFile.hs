@@ -30,6 +30,7 @@ generateM4 = do
     let changelogHeading = generateChangelogHeading maintainerString versionString buildNoString dateString
     let defines = map generateDefineStatement
             [ ("NAME",        name)
+            , ("OUTPUT",      outputName)
             , ("VERSION",     versionString)
             , ("SUMMARY",     synopsisString)
             , ("DESCRIPTION", descriptionString)

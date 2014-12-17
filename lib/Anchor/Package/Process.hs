@@ -59,9 +59,6 @@ packageJenkins = do
                     , "build_number " <> buildNoString
                     , "--define"
                     , "dist .el7"
-                    , "--define"
-                    , "_build_name_fmt"
-                    , outputName <> "-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm"
                     , specPath
                     ]
             createDirectoryIfMissing True $ workspacePath <> "/packages"
