@@ -2,3 +2,16 @@ borel.cabal-build-deps
 repos.list
 pkg_ver
 cabal-build-deps
+dist
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+*.swp
+.virtualenv
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.config
+*.png
