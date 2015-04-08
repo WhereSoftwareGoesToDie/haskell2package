@@ -4,4 +4,4 @@ import           Anchor.Package.Process
 import           Anchor.Package.Types
 
 main :: IO ()
-main = packageJenkins
+main = packageCentos

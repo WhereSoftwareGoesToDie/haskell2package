@@ -30,16 +30,16 @@ import           System.Process
 import           Anchor.Package.SpecFile
 import           Anchor.Package.Types
 
-packageJenkins :: IO ()
-packageJenkins = do
-    setEnv "LANG" "en_US.UTF-8"
-    sysDeps <- S.fromList <$> getArgs
-    token <- lookupEnv "OAUTH_TOKEN"
-    buildNoString <- getEnv "BUILD_NUMBER"
-    target <- getEnv "JOB_NAME"
+packageDebian :: IO ()
+packageDebian = do
+    packagerInfo <- genPackagerInfo
+    return () --TODO: Implement
+
+packageCentos :: IO ()
+packageCentos = do
     homePath <- getEnv "HOME"
-    pkgName <- lookupEnv "H2P_PACKAGE_NAME"
-    runPackager target buildNoString pkgName sysDeps (fmap strip token) (act homePath)
+    packagerInfo <- genPackagerInfo
+    runReaderT (act homePath) packagerInfo
   where
     act homePath = do
         PackagerInfo{..} <- ask
@@ -68,23 +68,21 @@ packageJenkins = do
         liftIO $ forM_ ("m4" : deps) $ \dep ->
             callProcess "sudo" ["yum", "install", "-y", dep]
 
-runPackager :: String
-            -> String
-            -> Maybe String
-            -> Set String
-            -> Maybe String
-            -> Packager a
-            -> IO a
-runPackager target buildNoString pkgName sysDeps token (Packager act) = do
-    anchorRepos <- getAnchorRepos
+genPackagerInfo :: IO PackagerInfo
+genPackagerInfo = do
+    setEnv "LANG" "en_US.UTF-8"
+    sysDeps <- S.fromList <$> getArgs
+    token <- fmap strip <$> lookupEnv "OAUTH_TOKEN"
+    buildNoString <- getEnv "BUILD_NUMBER"
+    target <- getEnv "JOB_NAME"
+    packageName <- lookupEnv "H2P_PACKAGE_NAME"
+    anchorRepos <- getAnchorRepos token
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    anchorDeps  <- cloneAndFindDeps anchorRepos
-    let packagerInfo = PackagerInfo target buildNoString pkgName cabalInfo anchorRepos sysDeps anchorDeps
-    runReaderT act packagerInfo
+    anchorDeps  <- cloneAndFindDeps target anchorRepos
+    return PackagerInfo{..}
   where
     cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]
-
-    getAnchorRepos =
+    getAnchorRepos token =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
     extractCabalDetails fp = do
         gpd <- readPackageDescription deafening fp
@@ -98,7 +96,7 @@ runPackager target buildNoString pkgName sysDeps token (Packager act) = do
                     (maintainer  pd)
                     (map fst $ condExecutables gpd)
 
-    cloneAndFindDeps anchorRepos = do
+    cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
         fst <$> execStateT (loop startingDeps) (startingDeps, S.empty)

@@ -26,6 +26,8 @@ data PackagerInfo = PackagerInfo
     , anchorDeps    :: Set String
     }
 
-newtype Packager a = Packager {
-    unPackager :: ReaderT PackagerInfo IO a
-} deriving (Functor, Applicative, Monad, MonadReader PackagerInfo, MonadIO)
+type Packager = ReaderT PackagerInfo IO
+
+--newtype Packager a = Packager {
+--    unPackager :: ReaderT PackagerInfo IO a
+--} deriving (Functor, Applicative, Monad, MonadReader PackagerInfo, MonadIO)
