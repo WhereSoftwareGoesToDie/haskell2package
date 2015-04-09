@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Anchor.Package.Types where
 
 import           Control.Applicative
@@ -14,7 +12,7 @@ data CabalInfo = CabalInfo
     , descriptionString :: String
     , maintainerString  :: String
     , executableNames   :: [String]
-    }
+    } deriving Show
 
 data PackagerInfo = PackagerInfo
     { target        :: String
@@ -24,10 +22,6 @@ data PackagerInfo = PackagerInfo
     , anchorRepos   :: Set String
     , sysDeps       :: Set String
     , anchorDeps    :: Set String
-    }
+    } deriving Show
 
 type Packager = ReaderT PackagerInfo IO
-
---newtype Packager a = Packager {
---    unPackager :: ReaderT PackagerInfo IO a
---} deriving (Functor, Applicative, Monad, MonadReader PackagerInfo, MonadIO)

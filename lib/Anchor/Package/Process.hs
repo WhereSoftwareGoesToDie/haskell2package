@@ -81,21 +81,8 @@ genPackagerInfo = do
     anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
   where
-    cabalPath pkg = concat [pkg, "/", pkg, ".cabal"]
     getAnchorRepos token =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
-    extractCabalDetails fp = do
-        gpd <- readPackageDescription deafening fp
-        let pd = packageDescription gpd
-        let (PackageIdentifier (PackageName pName) pVer) = package pd
-        return $ CabalInfo
-                    pName
-                    (showVersion pVer)
-                    (synopsis    pd)
-                    (description pd)
-                    (maintainer  pd)
-                    (map fst $ condExecutables gpd)
-
     cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
@@ -147,3 +134,22 @@ genPackagerInfo = do
             ]
 
     extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints
+
+extractDefaultCabalDetails :: IO CabalInfo
+extractDefaultCabalDetails = extractCabalDetails =<< (cabalPath <$> getEnv "JOB_NAME")
+
+cabalPath :: String -> FilePath
+cabalPath pkg = pkg <> "/" <> pkg <> ".cabal"
+
+extractCabalDetails :: FilePath -> IO CabalInfo
+extractCabalDetails fp = do
+    gpd <- readPackageDescription deafening fp
+    let pd = packageDescription gpd
+    let (PackageIdentifier (PackageName pName) pVer) = package pd
+    return $ CabalInfo
+                pName
+                (showVersion pVer)
+                (synopsis    pd)
+                (description pd)
+                (maintainer  pd)
+                (map fst $ condExecutables gpd)
