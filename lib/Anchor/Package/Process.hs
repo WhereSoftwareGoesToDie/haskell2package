@@ -23,36 +23,70 @@ import           Github.Auth
 import           Github.Repos
 import           System.Directory
 import           System.Environment
+import           System.FilePath
 import           System.IO
 import           System.Locale
 import           System.Process
 
-import           Anchor.Package.SpecFile
+import           Anchor.Package.Template
 import           Anchor.Package.Types
 
 packageDebian :: IO ()
 packageDebian = do
     packagerInfo <- genPackagerInfo
-    return () --TODO: Implement
+    flip runReaderT packagerInfo $ do
+        PackagerInfo{..} <- ask
+        let CabalInfo{..} = cabalInfo
+        installSysDeps
+        control <- generateControlFile
+        liftIO $ do
+            createDirectoryIfMissing True $ workspacePath </> "packages"
+            createDirectoryIfMissing True $ target </> "debian/usr/bin"
+            createDirectoryIfMissing True $ target </> "debian/usr/share" </> target
+            createDirectoryIfMissing True $ target </> "debian/DEBIAN"
+            let controlPath = target </> "debian/DEBIAN/control"
+            writeFile controlPath control
+            setCurrentDirectory target
+            callProcess "cabal" ["update"]
+            callProcess "cabal" ["sandbox", "init"]
+            case S.toList anchorDeps of
+                [] -> return ()
+                ds -> callProcess "cabal" $ ["sandbox", "add-source"] <> map ("../" <>) ds
+            callProcess "cabal" ["install", "--only-dependencies", "--enable-tests", "-j"]
+            callProcess "cabal" ["configure", "--enable-tests"]
+            callProcess "cabal" ["test"]
+            callProcess "cabal" ["build"]
+            forM_ executableNames
+                (\x -> callProcess "cp" ["dist/build" </> x </> x, "debian/usr/bin/"])
+            createDirectoryIfMissing True "files"
+            system $ "cp files/* -a debian/usr/share" </> target
+            setCurrentDirectory "debian"
+            system "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\" > DEBIAN/md5sums"
+            setCurrentDirectory ".."
+            callProcess "dpkg-deb" ["--build", "debian"]
+            let outputName = fromMaybe target packageName
+            callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
+
+  where
+    installSysDeps = do
+        deps <- map (<> "-dev") <$> (<> ["libgmp10", "zlib1g"]) <$> S.toList <$> sysDeps <$> ask
+        liftIO $ forM_ ("m4" : deps) $ \dep ->
+            callProcess "sudo" ["apt-get", "install", "-y", dep]
 
 packageCentos :: IO ()
 packageCentos = do
-    homePath <- getEnv "HOME"
     packagerInfo <- genPackagerInfo
-    runReaderT (act homePath) packagerInfo
-  where
-    act homePath = do
+    flip runReaderT packagerInfo $ do
         PackagerInfo{..} <- ask
         installSysDeps
-        spec <- generateSpecFile "/usr/share/haskell2package/TEMPLATE.spec"
+        spec <- generateSpecFile
         liftIO $ do
-            workspacePath <- getEnv "WORKSPACE"
-            let specPath = workspacePath <> "/" <> target <> ".spec"
+            let specPath = target </> target <> ".spec"
             writeFile specPath spec
-            createDirectoryIfMissing True (homePath <> "/rpmbuild/SOURCES/")
-            system ("mv " <> workspacePath <> "/../*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
+            createDirectoryIfMissing True (homePath </> "rpmbuild/SOURCES/")
+            system ("mv " <> target <> "/../*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
             callProcess "rpmdev-setuptree" []
-            writeFile (homePath <> "/.rpmmacros") "%debug_package %{nil}"
+            writeFile (homePath </> ".rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"
                     [ "-bb"
                     , "--define"
@@ -62,7 +96,8 @@ packageCentos = do
                     , specPath
                     ]
             createDirectoryIfMissing True $ workspacePath <> "/packages"
-            void $ system $ "cp " <> homePath <> "/rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath <> "/packages/"
+            void $ system $ "cp " <> homePath </> "rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath </> "packages/"
+  where
     installSysDeps = do
         deps <- map (<> "-devel") <$> (<> ["gmp", "zlib"]) <$> S.toList <$> sysDeps <$> ask
         liftIO $ forM_ ("m4" : deps) $ \dep ->
@@ -74,17 +109,21 @@ genPackagerInfo = do
     sysDeps <- S.fromList <$> getArgs
     token <- fmap strip <$> lookupEnv "OAUTH_TOKEN"
     buildNoString <- getEnv "BUILD_NUMBER"
-    target <- getEnv "JOB_NAME"
+    jobName <- getEnv "JOB_NAME"
+    target <- fromMaybe jobName <$> lookupEnv "H2P_TARGET"
     packageName <- lookupEnv "H2P_PACKAGE_NAME"
+    homePath <- getEnv "HOME"
+    workspacePath <- getEnv "WORKSPACE"
     anchorRepos <- getAnchorRepos token
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    anchorDeps  <- cloneAndFindDeps target anchorRepos
+    anchorDeps  <- cloneAndFindDeps jobName target anchorRepos
     return PackagerInfo{..}
   where
     getAnchorRepos token =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
-    cloneAndFindDeps target anchorRepos = do
-        startingDeps <- (\s -> s `S.difference` S.singleton target) <$> findCabalBuildDeps (cabalPath target) anchorRepos
+    cloneAndFindDeps jobName target anchorRepos = do
+        startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
+                            findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
         fst <$> execStateT (loop startingDeps) (startingDeps, S.empty)
       where
@@ -103,7 +142,7 @@ genPackagerInfo = do
         cloneCommand   pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "clone"
-                                    , "git@github.com:anchor/" <> pkg <> ".git"
+                                    , "git@github.com:anchor" </> pkg <> ".git"
                                     ]
                                     Nothing
                                     Nothing
@@ -136,10 +175,12 @@ genPackagerInfo = do
     extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints
 
 extractDefaultCabalDetails :: IO CabalInfo
-extractDefaultCabalDetails = extractCabalDetails =<< (cabalPath <$> getEnv "JOB_NAME")
+extractDefaultCabalDetails = do
+    target <- (!! 0) <$> getArgs
+    extractCabalDetails (cabalPath target)
 
 cabalPath :: String -> FilePath
-cabalPath pkg = pkg <> "/" <> pkg <> ".cabal"
+cabalPath target = target <> "/" <> target <> ".cabal"
 
 extractCabalDetails :: FilePath -> IO CabalInfo
 extractCabalDetails fp = do

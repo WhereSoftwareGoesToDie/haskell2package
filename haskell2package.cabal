@@ -1,8 +1,9 @@
 name:                haskell2package
-version:             1.1.0
-synopsis:            Builds RPMs from Haskell projects
-description:         Parses cabal files and generates a specfile, which is then used
-                     to build an rpm, appropriately managing Anchor dependencies.
+version:             1.2.0
+synopsis:            Builds .rpms and .debs from Haskell projects
+description:         Parses cabal files and generates a specfile or control file,
+                     which is then used to build an rpm or deb respectively,
+                     appropriately managing Anchor dependencies.
 license:             BSD3
 license-file:        LICENSE
 author:              Oswyn Brent
@@ -20,7 +21,7 @@ source-repository    head
 library
   exposed-modules:     Anchor.Package.Process
                        Anchor.Package.Types
-                       Anchor.Package.SpecFile
+                       Anchor.Package.Template
   build-depends:       base >=4.7 && < 4.8,
                        containers >=0.5,
                        Cabal >=1.18,
@@ -31,12 +32,21 @@ library
                        old-locale,
                        transformers,
                        directory,
+                       filepath,
                        MissingH
   hs-source-dirs:      lib
   default-language:    Haskell2010
 
-executable haskell2package
-  main-is:             Main.hs
+executable haskell2rpm
+  main-is:             Rpm.hs
+  build-depends:       base >=4.7,
+                       haskell2package
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+executable haskell2deb
+  main-is:             Deb.hs
   build-depends:       base >=4.7,
                        haskell2package
 

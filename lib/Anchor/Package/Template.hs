@@ -1,10 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Anchor.Package.SpecFile where
+module Anchor.Package.Template where
 
 import           Control.Arrow
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
+import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set               as S
@@ -15,8 +16,14 @@ import           System.Process
 
 import           Anchor.Package.Types
 
-generateSpecFile :: FilePath -> Packager String
-generateSpecFile templatePath = do
+generateSpecFile :: Packager String
+generateSpecFile = generateTemplate "/usr/share/haskell2package/TEMPLATE.spec"
+
+generateControlFile :: Packager String
+generateControlFile = generateTemplate "/usr/share/haskell2package/control"
+
+generateTemplate :: FilePath -> Packager String
+generateTemplate templatePath = do
     m4Defs <- generateM4
     liftIO $ readProcess "m4" ["-", templatePath] m4Defs
 
@@ -33,8 +40,10 @@ generateM4 = do
             [ ("NAME",        name)
             , ("PKGNAME",     fromMaybe name packageName)
             , ("VERSION",     versionString)
+            , ("BUILDNO",     buildNoString)
             , ("SUMMARY",     synopsisString)
             , ("DESCRIPTION", descriptionString)
+            , ("DEB_DESC",    concatMap (' ':) $ lines descriptionString)
             , ("SRCS",        srcStrings)
             , ("SETUP",       setupStrings)
             , ("COPYS",       generateCopyStrings executableNames)
@@ -42,6 +51,7 @@ generateM4 = do
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
+            , ("DEB_DEPS",    concatMap (<> ",")     $ S.toList sysDeps)
             , ("CHANGELOG_HEADING", changelogHeading)
             ]
     return $ unlines $ m4Header <> defines
