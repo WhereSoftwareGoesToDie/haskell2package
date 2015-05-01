@@ -42,7 +42,6 @@ packageDebian = do
         liftIO $ do
             createDirectoryIfMissing True $ workspacePath </> "packages"
             createDirectoryIfMissing True $ target </> "debian/usr/bin"
-            createDirectoryIfMissing True $ target </> "debian/usr/share" </> target
             createDirectoryIfMissing True $ target </> "debian/DEBIAN"
             let controlPath = target </> "debian/DEBIAN/control"
             writeFile controlPath control
@@ -58,8 +57,10 @@ packageDebian = do
             callProcess "cabal" ["build"]
             forM_ executableNames
                 (\x -> callProcess "cp" ["dist/build" </> x </> x, "debian/usr/bin/"])
-            createDirectoryIfMissing True "files"
-            system $ "cp files/* -a debian/usr/share" </> target
+            hasExtraFiles <- doesDirectoryExist "files"
+            when hasExtraFiles $ do
+                createDirectoryIfMissing True $ "debian/usr/share" </> target
+                void $ system $ "cp files/* -a debian/usr/share" </> target
             setCurrentDirectory "debian"
             system "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\" > DEBIAN/md5sums"
             setCurrentDirectory ".."
