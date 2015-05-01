@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Anchor.Package.Types where
 
 import           Control.Applicative
@@ -14,20 +12,18 @@ data CabalInfo = CabalInfo
     , descriptionString :: String
     , maintainerString  :: String
     , executableNames   :: [String]
-    }
+    } deriving Show
 
 data PackagerInfo = PackagerInfo
-    { target        :: String
-    , buildNoString :: String
-    , packageName   :: Maybe String
-    , cabalInfo     :: CabalInfo
-    , anchorRepos   :: Set String
-    , sysDeps       :: Set String
-    , anchorDeps    :: Set String
-    }
+    { target        :: String       -- Name of the target
+    , workspacePath :: String       -- Jenkins workspace path
+    , buildNoString :: String       -- Jenkins build number
+    , packageName   :: Maybe String -- Output package name (without extensions)
+    , cabalInfo     :: CabalInfo    -- Parsed cabal information relevant to packaging
+    , anchorRepos   :: Set String   -- List of all anchor github repos
+    , sysDeps       :: Set String   -- List of system requirements
+    , anchorDeps    :: Set String   -- List of anchor-specific dependencies
+    , homePath      :: String       -- Jenkins home path
+    } deriving Show
 
 type Packager = ReaderT PackagerInfo IO
-
---newtype Packager a = Packager {
---    unPackager :: ReaderT PackagerInfo IO a
---} deriving (Functor, Applicative, Monad, MonadReader PackagerInfo, MonadIO)

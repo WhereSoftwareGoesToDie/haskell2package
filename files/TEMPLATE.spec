@@ -33,7 +33,7 @@ sed -r -i "s,^(remote-repo: hackage.haskell.org.*)$,\1\nremote-repo: hackage.syd
 cabal update
 cabal sandbox init
 ADD_SRCS()
-cabal install --only-dependencies --enable-tests
+cabal install --only-dependencies --enable-tests -j
 cabal configure --enable-tests
 cabal test
 cabal build
