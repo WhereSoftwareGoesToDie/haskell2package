@@ -114,12 +114,12 @@ genPackagerInfo = do
     workspacePath <- getEnv "WORKSPACE"
     anchorRepos <- getAnchorRepos token
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    anchorDeps  <- cloneAndFindDeps jobName target anchorRepos
+    anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
   where
     getAnchorRepos token =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
-    cloneAndFindDeps jobName target anchorRepos = do
+    cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
                             findCabalBuildDeps (cabalPath target) anchorRepos
         archiveCommand target
