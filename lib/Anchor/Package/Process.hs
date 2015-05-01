@@ -68,10 +68,7 @@ packageDebian = do
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
-    installSysDeps = do
-        deps <- map (<> "-dev") <$> (<> ["libgmp10", "zlib1g"]) <$> S.toList <$> sysDeps <$> ask
-        liftIO $ forM_ ("m4" : deps) $ \dep ->
-            callProcess "sudo" ["apt-get", "install", "-y", dep]
+    installSysDeps = liftIO $ callProcess "sudo" ["apt-get", "install", "-y", "libgmp10-dev", "zlib1g-dev", "m4"]
 
 packageCentos :: IO ()
 packageCentos = do
