@@ -6,6 +6,7 @@ import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Reader
 import           Control.Monad.State.Lazy
+import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set                              (Set)
@@ -37,14 +38,13 @@ packageDebian = do
     flip runReaderT packagerInfo $ do
         PackagerInfo{..} <- ask
         let CabalInfo{..} = cabalInfo
-        installSysDeps
-        control <- generateControlFile
+        let executablePaths = map (\x -> "dist/build" </> x </> x) executableNames
         liftIO $ do
+            system "sudo apt-get install -y m4"
+
             createDirectoryIfMissing True $ workspacePath </> "packages"
             createDirectoryIfMissing True $ target </> "debian/usr/bin"
             createDirectoryIfMissing True $ target </> "debian/DEBIAN"
-            let controlPath = target </> "debian/DEBIAN/control"
-            writeFile controlPath control
             setCurrentDirectory target
             callProcess "cabal" ["update"]
             callProcess "cabal" ["sandbox", "init"]
@@ -55,8 +55,12 @@ packageDebian = do
             callProcess "cabal" ["configure", "--enable-tests"]
             callProcess "cabal" ["test"]
             callProcess "cabal" ["build"]
-            forM_ executableNames
-                (\x -> callProcess "cp" ["dist/build" </> x </> x, "debian/usr/bin/"])
+            deps <- getSysDeps executablePaths
+            control <- runReaderT generateControlFile packagerInfo{sysDeps=S.fromList deps}
+            let controlPath = target </> "debian/DEBIAN/control"
+            writeFile controlPath control
+            forM_ executablePaths
+                (\x -> callProcess "cp" [x, "debian/usr/bin/"])
             hasExtraFiles <- doesDirectoryExist "files"
             when hasExtraFiles $ do
                 createDirectoryIfMissing True $ "debian/usr/share" </> target
@@ -69,7 +73,10 @@ packageDebian = do
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
-    installSysDeps = liftIO $ callProcess "sudo" ["apt-get", "install", "-y", "libgmp10-dev", "zlib1g-dev", "m4"]
+    getSysDeps executablePaths = 
+        lines <$> readProcess "/usr/share/haskell2package/getDebDeps.sh "
+                              [intercalate " " executablePaths]
+                              ""
 
 packageCentos :: IO ()
 packageCentos = do
