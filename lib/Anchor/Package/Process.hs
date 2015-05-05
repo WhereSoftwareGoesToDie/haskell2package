@@ -6,12 +6,12 @@ import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Reader
 import           Control.Monad.State.Lazy
+import           Data.Char
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set                              (Set)
 import qualified Data.Set                              as S
-import           Data.String.Utils
 import           Data.Time.Clock
 import           Data.Time.Format
 import           Data.Version
@@ -73,7 +73,7 @@ packageDebian = do
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
-    getSysDeps executablePaths = 
+    getSysDeps executablePaths =
         lines <$> readProcess "/usr/share/haskell2package/getDebDeps.sh "
                               [intercalate " " executablePaths]
                               ""
@@ -124,6 +124,7 @@ genPackagerInfo = do
     anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
   where
+    strip = reverse . dropWhile isSpace . reverse . dropWhile isSpace
     getAnchorRepos token =
         S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
     cloneAndFindDeps target anchorRepos = do
