@@ -3,30 +3,23 @@
 module Anchor.Package.Process where
 
 import           Control.Applicative
-import           Control.Arrow
 import           Control.Monad.Reader
 import           Control.Monad.State.Lazy
 import           Data.Char
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Set                              (Set)
 import qualified Data.Set                              as S
-import           Data.Time.Clock
-import           Data.Time.Format
 import           Data.Version
 import           Distribution.Package
 import           Distribution.PackageDescription
 import           Distribution.PackageDescription.Parse
 import           Distribution.Verbosity
-import           Distribution.Version
 import           Github.Auth
 import           Github.Repos
 import           System.Directory
 import           System.Environment
 import           System.FilePath
-import           System.IO
-import           System.Locale
 import           System.Process
 
 import           Anchor.Package.Template
@@ -75,7 +68,7 @@ packageDebian = do
   where
     getSysDeps :: [String] -> IO [String]
     getSysDeps executablePaths = do
-        libs <- readProcess "bash" ["-c", "ldd " <> intercalate " " executablePaths <> " | awk '/=>/{print $(NF-1)}'"] ""
+        libs <- readProcess "bash" ["-c", "ldd " <> unwords executablePaths <> " | awk '/=>/{print $(NF-1)}'"] ""
         let libs' = nub . sort . lines $ libs
         pkgs <- readProcess "dpkg" ("-S" : libs') ""
         return (sort . nub . fmap (takeWhile (/= ':')) . lines $ pkgs)
