@@ -73,10 +73,12 @@ packageDebian = do
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
-    getSysDeps executablePaths =
-        lines <$> readProcess "/usr/share/haskell2package/getDebDeps.sh "
-                              [intercalate " " executablePaths]
-                              ""
+    getSysDeps :: [String] -> IO [String]
+    getSysDeps executablePaths = do
+        libs <- readProcess "bash" ["-c", "ldd " <> intercalate " " executablePaths <> " | awk '/=>/{print $(NF-1)}'"] ""
+        let libs' = nub . sort . lines $ libs
+        pkgs <- readProcess "dpkg" ("-S" : libs') ""
+        return (sort . nub . fmap (takeWhile (/= ':')) . lines $ pkgs)
 
 packageCentos :: IO ()
 packageCentos = do
