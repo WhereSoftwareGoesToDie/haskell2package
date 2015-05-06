@@ -5,6 +5,7 @@ module Anchor.Package.Template where
 import           Control.Arrow
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
+import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set               as S
@@ -50,7 +51,7 @@ generateM4 = do
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
-            , ("DEB_DEPS",    concatMap (<> ",")     $ S.toList sysDeps)
+            , ("DEB_DEPS",    intercalate ","        $ S.toList sysDeps)
             , ("CHANGELOG_HEADING", changelogHeading)
             ]
     return $ unlines $ m4Header <> defines

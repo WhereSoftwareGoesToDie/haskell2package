@@ -120,8 +120,7 @@ genPackagerInfo = do
     return PackagerInfo{..}
   where
     strip = reverse . dropWhile isSpace . reverse . dropWhile isSpace
-    getAnchorRepos token =
-        S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
+    getAnchorRepos token = S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
     cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
                             findCabalBuildDeps (cabalPath target) anchorRepos
