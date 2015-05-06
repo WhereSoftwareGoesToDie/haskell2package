@@ -57,7 +57,7 @@ packageDebian = do
             callProcess "cabal" ["build"]
             deps <- getSysDeps executablePaths
             control <- runReaderT generateControlFile packagerInfo{sysDeps=S.fromList deps}
-            let controlPath = target </> "debian/DEBIAN/control"
+            let controlPath = "debian/DEBIAN/control"
             writeFile controlPath control
             forM_ executablePaths
                 (\x -> callProcess "cp" [x, "debian/usr/bin/"])
