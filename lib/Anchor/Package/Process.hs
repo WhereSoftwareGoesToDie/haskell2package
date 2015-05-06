@@ -33,8 +33,6 @@ packageDebian = do
         let CabalInfo{..} = cabalInfo
         let executablePaths = map (\x -> "dist/build" </> x </> x) executableNames
         liftIO $ do
-            system "sudo apt-get install -y m4"
-
             createDirectoryIfMissing True $ workspacePath </> "packages"
             createDirectoryIfMissing True $ target </> "debian/usr/bin"
             createDirectoryIfMissing True $ target </> "debian/DEBIAN"
