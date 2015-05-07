@@ -69,7 +69,7 @@ packageDebian = do
     getSysDeps :: [String] -> IO [String]
     getSysDeps executablePaths = do
         libs <- readProcess "bash" ["-c", "ldd " <> unwords executablePaths <> " | awk '/=>/{print $(NF-1)}'"] ""
-        let libs' = nub . sort . lines $ libs
+        let libs' = nub . sort . map takeFileName . lines $ libs
         pkgs <- readProcess "dpkg" ("-S" : libs') ""
         return (sort . nub . fmap (takeWhile (/= ':')) . lines $ pkgs)
 
