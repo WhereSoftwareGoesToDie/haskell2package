@@ -19,6 +19,7 @@ import           Github.Auth
 import           Github.Repos
 import           System.Directory
 import           System.Environment
+import           System.Exit
 import           System.FilePath
 import           System.Process
 
@@ -57,7 +58,8 @@ packageDebian = do
                 createDirectoryIfMissing True $ "debian/usr/share" </> target
                 void $ system $ "cp files/* -a debian/usr/share" </> target
             setCurrentDirectory "debian"
-            system "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\" > DEBIAN/md5sums"
+            md5s <- readProcess "bash" ["-c", "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\""] ""
+            writeFile "DEBIAN/md5sums" md5s
             setCurrentDirectory ".."
             callProcess "dpkg-deb" ["--build", "debian"]
             let outputName = fromMaybe target packageName
@@ -82,7 +84,7 @@ packageCentos = do
             let specPath = target </> target <> ".spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath </> "rpmbuild/SOURCES/")
-            system ("mv " <> target <> "/../*.tar.gz " <> homePath <> "/rpmbuild/SOURCES/")
+            callProcess "mv" [target <> "/../*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
             callProcess "rpmdev-setuptree" []
             writeFile (homePath </> ".rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"
@@ -137,18 +139,18 @@ genPackagerInfo = do
             put (fullDeps `S.union` missing', S.empty)
             unless (S.null missing') $ loop missing'
 
-        cloneCommand   pkg = waitForProcess =<< runProcess
+        cloneCommand   pkg = callProcess
                                     "git"
                                     [ "clone"
                                     , "git@github.com:anchor" </> pkg <> ".git"
                                     ]
-                                    Nothing
-                                    Nothing
-                                    Nothing
-                                    Nothing
-                                    Nothing
 
-        archiveCommand pkg = waitForProcess =<< runProcess
+        archiveCommand pkg = do
+            res <- archiveCommand' pkg
+            case res of
+                ExitSuccess -> return ()
+                e@(ExitFailure _) -> fail $ show e
+        archiveCommand' pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
                                     , "--prefix=" <> pkg <> "/"
