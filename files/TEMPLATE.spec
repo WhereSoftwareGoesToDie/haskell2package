@@ -11,8 +11,6 @@ Source0:	NAME().tar.gz
 SRCS()
 BuildRoot:	%(mktemp -ud %{_tmppath}/NAME()-%{version}-%{release}-XXXXXX)
 
-BuildRequires:	ghc >= 7.8.3
-BuildRequires:	cabal-install
 BuildRequires:	zlib-devel
 BuildRequires:	gmp-devel
 BUILD_REQS()
