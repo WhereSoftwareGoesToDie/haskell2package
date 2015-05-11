@@ -67,7 +67,7 @@ packageDebian = do
             writeFile "DEBIAN/md5sums" md5s
             setCurrentDirectory ".."
             callProcess "dpkg-deb" ["--build", "debian"]
-            let outputName = fromMaybe target packageName
+            let outputName = fromMaybe (takeFileName target) packageName
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
@@ -210,8 +210,8 @@ extractDefaultCabalDetails = do
     target <- (!! 0) <$> getArgs
     extractCabalDetails (cabalPath target)
 
-cabalPath :: String -> FilePath
-cabalPath target = target <> "/" <> target <> ".cabal"
+cabalPath :: FilePath -> FilePath
+cabalPath target = target </> takeBaseName target <.> "cabal"
 
 extractCabalDetails :: FilePath -> IO CabalInfo
 extractCabalDetails fp = do
