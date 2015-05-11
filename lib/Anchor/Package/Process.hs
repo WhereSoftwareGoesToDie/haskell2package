@@ -121,7 +121,8 @@ genPackagerInfo = do
     workspacePath <- getEnv "WORKSPACE"
     anchorRepos <- getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] defaultProgramConfiguration
+    (_,_,conf) <- configure deafening Nothing Nothing defaultProgramConfiguration 
+    installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] conf
     anchorDeps  <- cloneAndFindDeps target installed anchorRepos
     return PackagerInfo{..}
   where
@@ -137,7 +138,7 @@ genPackagerInfo = do
                 Left e -> fail $ show e
                 Right (SearchCodeResult {searchCodeCodes = []}) -> return repos
                 Right (SearchCodeResult {searchCodeCodes = codes}) ->
-                    return $ foldl' addCode repos codes
+                    go (foldl' addCode repos codes) (page+1) token
         addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
         addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
     cloneAndFindDeps :: String -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
