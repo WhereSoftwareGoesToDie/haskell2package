@@ -4,7 +4,6 @@ module Anchor.Package.Process where
 
 import           Control.Applicative
 import           Control.Monad.Reader
-import           Control.Monad.State.Lazy
 import           Data.Char
 import           Data.List
 import qualified Data.Map                              as M
@@ -116,7 +115,7 @@ genPackagerInfo = do
     packageName <- lookupEnv "H2P_PACKAGE_NAME"
     homePath <- getEnv "HOME"
     workspacePath <- getEnv "WORKSPACE"
-    anchorRepos <- M.keysSet <$> getAnchorRepos (GithubOAuth token)
+    anchorRepos <- getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
     anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
@@ -136,36 +135,45 @@ genPackagerInfo = do
                     return $ foldl' addCode repos codes
         addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
         addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
-    cloneAndFindDeps :: String -> S.Set String -> IO (S.Set String)
+    cloneAndFindDeps :: String -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
     cloneAndFindDeps target anchorRepos = do
-        startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
-                            findCabalBuildDeps (cabalPath target) anchorRepos
+        let anchorRepos' = do
+                (repo,cabal_files) <- M.toList anchorRepos
+                cabal_file <- S.toList cabal_files
+                return (PackageName $ takeBaseName cabal_file, (repo,cabal_file,False))
+        startingDeps <- findCabalBuildDeps (cabalPath target)
         archiveCommand target
-        fst <$> execStateT (loop startingDeps) (startingDeps, S.empty)
+        loop (M.fromList anchorRepos') startingDeps
       where
-        loop missing = do
-            forM_ (S.toList missing) $ \dep -> do
-                (fullDeps, iterDeps) <- get
-                liftIO $ cloneCommand dep
-                liftIO $ archiveCommand dep
-                newDeps <- liftIO $ findCabalBuildDeps (cabalPath dep) anchorRepos
-                put (fullDeps, newDeps `S.union` iterDeps)
-            (fullDeps, iterDeps) <- get
-            let missing' = iterDeps `S.difference` fullDeps
-            put (fullDeps `S.union` missing', S.empty)
-            unless (S.null missing') $ loop missing'
+        loop anchorRepos' missing
+            | S.null missing = return . S.fromList $ do
+                  (repo,cabal_file,True) <- M.elems anchorRepos'
+                  return $ repo </> takeDirectory cabal_file
+            | otherwise = do
+                  let x = S.elemAt 0 missing
+                      missing' = S.deleteAt 0 missing
+                  case M.lookup x anchorRepos' of
+                      Nothing -> loop anchorRepos' missing'
+                      Just (_,_,True) -> loop anchorRepos' missing'
+                      Just (repo,cabal_file,False) -> do
+                          cloneCommand repo
+                          new_missing <- findCabalBuildDeps $ repo </> cabal_file
+                          loop (M.insert x (repo,cabal_file,True) anchorRepos') (missing' <> new_missing)
 
-        cloneCommand   pkg = callProcess
-                                    "git"
-                                    [ "clone"
-                                    , "git@github.com:anchor" </> pkg <> ".git"
-                                    ]
+        cloneCommand repo = do
+            exists <- doesFileExist repo
+            unless exists $ callProcess
+                "git"
+                [ "clone"
+                , "git@github.com:anchor" </> repo <> ".git"
+                ]
 
         archiveCommand pkg = do
             res <- archiveCommand' pkg
             case res of
                 ExitSuccess -> return ()
                 e@(ExitFailure _) -> fail $ show e
+
         archiveCommand' pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
@@ -180,16 +188,16 @@ genPackagerInfo = do
                                     Nothing
                                     Nothing
 
-    findCabalBuildDeps :: FilePath -> S.Set String -> IO (S.Set String)
-    findCabalBuildDeps fp anchorRepos = do
-        gpd <- readPackageDescription deafening fp
-        return $ S.intersection anchorRepos $ S.fromList $ concat $ concat
-            [ map extractDeps $ maybeToList $ condLibrary gpd
-            , map (extractDeps . snd) (condExecutables gpd)
-            , map (extractDeps . snd) (condTestSuites gpd)
+    findCabalBuildDeps :: FilePath -> IO (S.Set PackageName)
+    findCabalBuildDeps fp = do
+        GenericPackageDescription{..} <- readPackageDescription deafening fp
+        return . S.delete (pkgName . package $ packageDescription) . S.fromList . concat . concat $
+            [ map extractDeps . maybeToList $ condLibrary
+            , map (extractDeps . snd) condExecutables
+            , map (extractDeps . snd) condTestSuites
             ]
 
-    extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints
+    extractDeps = map (\(Dependency n _ ) -> n) . condTreeConstraints
 
 extractDefaultCabalDetails :: IO CabalInfo
 extractDefaultCabalDetails = do
