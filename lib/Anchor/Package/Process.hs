@@ -4,9 +4,9 @@ module Anchor.Package.Process where
 
 import           Control.Applicative
 import           Control.Monad.Reader
-import           Control.Monad.State.Lazy
 import           Data.Char
 import           Data.List
+import qualified Data.Map                              as M
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set                              as S
@@ -14,9 +14,14 @@ import           Data.Version
 import           Distribution.Package
 import           Distribution.PackageDescription
 import           Distribution.PackageDescription.Parse
+import           Distribution.Simple.Compiler
+import           Distribution.Simple.GHC
+import           Distribution.Simple.PackageIndex
+import           Distribution.Simple.Program
 import           Distribution.Verbosity
 import           Github.Auth
 import           Github.Repos
+import           Github.Search
 import           System.Directory
 import           System.Environment
 import           System.Exit
@@ -62,7 +67,7 @@ packageDebian = do
             writeFile "DEBIAN/md5sums" md5s
             setCurrentDirectory ".."
             callProcess "dpkg-deb" ["--build", "debian"]
-            let outputName = fromMaybe target packageName
+            let outputName = fromMaybe (takeFileName target) packageName
             callProcess "mv" ["debian.deb", workspacePath </> "packages" </> outputName <> "_" <> versionString <> "-" <> buildNoString <> "_amd64.deb"]
 
   where
@@ -114,49 +119,67 @@ genPackagerInfo = do
     packageName <- lookupEnv "H2P_PACKAGE_NAME"
     homePath <- getEnv "HOME"
     workspacePath <- getEnv "WORKSPACE"
-    anchorRepos <- getAnchorRepos token
+    anchorRepos <- getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    anchorDeps  <- cloneAndFindDeps target anchorRepos
+    installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] defaultProgramConfiguration
+    anchorDeps  <- cloneAndFindDeps target installed anchorRepos
     return PackagerInfo{..}
   where
     strip :: String -> String
     strip = reverse . dropWhile isSpace . reverse . dropWhile isSpace
-    getAnchorRepos :: String -> IO (S.Set String)
-    getAnchorRepos token = do
-        res <- organizationRepos' (Just $ GithubOAuth token) "anchor"
-        case res of
-            Left e -> fail $ show e
-            Right xs -> return . S.fromList . fmap repoName $ xs
-    cloneAndFindDeps :: String -> S.Set String -> IO (S.Set String)
-    cloneAndFindDeps target anchorRepos = do
-        startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
-                            findCabalBuildDeps (cabalPath target) anchorRepos
-        archiveCommand target
-        fst <$> execStateT (loop startingDeps) (startingDeps, S.empty)
+    getAnchorRepos :: GithubAuth -> IO (M.Map String (S.Set FilePath))
+    getAnchorRepos = go mempty 1
       where
-        loop missing = do
-            forM_ (S.toList missing) $ \dep -> do
-                (fullDeps, iterDeps) <- get
-                liftIO $ cloneCommand dep
-                liftIO $ archiveCommand dep
-                newDeps <- liftIO $ findCabalBuildDeps (cabalPath dep) anchorRepos
-                put (fullDeps, newDeps `S.union` iterDeps)
-            (fullDeps, iterDeps) <- get
-            let missing' = iterDeps `S.difference` fullDeps
-            put (fullDeps `S.union` missing', S.empty)
-            unless (S.null missing') $ loop missing'
+        go :: M.Map String (S.Set FilePath) -> Int -> GithubAuth -> IO (M.Map String (S.Set FilePath))
+        go repos page token = do
+            res <- searchCode' (Just token) ("q=user:anchor+extension:cabal&page=" <> show page)
+            case res of
+                Left e -> fail $ show e
+                Right (SearchCodeResult {searchCodeCodes = []}) -> return repos
+                Right (SearchCodeResult {searchCodeCodes = codes}) ->
+                    return $ foldl' addCode repos codes
+        addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
+        addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
+    cloneAndFindDeps :: String -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
+    cloneAndFindDeps target installed anchorRepos = do
+        let anchorRepos' = do
+                (repo,cabal_files) <- M.toList anchorRepos
+                cabal_file <- S.toList cabal_files
+                return (PackageName $ takeBaseName cabal_file, (repo,cabal_file,False))
+        startingDeps <- findCabalBuildDeps (cabalPath target)
+        archiveCommand target
+        loop (M.fromList anchorRepos') startingDeps
+      where
+        loop anchorRepos' missing
+            | S.null missing = return . S.fromList $ do
+                  (repo,cabal_file,True) <- M.elems anchorRepos'
+                  return $ repo </> takeDirectory cabal_file
+            | otherwise = do
+                  let x = S.elemAt 0 missing
+                      missing' = S.deleteAt 0 missing
+                  case (lookupPackageName installed x, M.lookup x anchorRepos') of
+                      (_:_,_) -> loop anchorRepos' missing'
+                      (_,Nothing) -> loop anchorRepos' missing'
+                      (_,Just (_,_,True)) -> loop anchorRepos' missing'
+                      (_,Just (repo,cabal_file,False)) -> do
+                          cloneCommand repo
+                          new_missing <- findCabalBuildDeps $ repo </> cabal_file
+                          loop (M.insert x (repo,cabal_file,True) anchorRepos') (missing' <> new_missing)
 
-        cloneCommand   pkg = callProcess
-                                    "git"
-                                    [ "clone"
-                                    , "git@github.com:anchor" </> pkg <> ".git"
-                                    ]
+        cloneCommand repo = do
+            exists <- doesFileExist repo
+            unless exists $ callProcess
+                "git"
+                [ "clone"
+                , "git@github.com:anchor" </> repo <> ".git"
+                ]
 
         archiveCommand pkg = do
             res <- archiveCommand' pkg
             case res of
                 ExitSuccess -> return ()
                 e@(ExitFailure _) -> fail $ show e
+
         archiveCommand' pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
@@ -171,24 +194,24 @@ genPackagerInfo = do
                                     Nothing
                                     Nothing
 
-    findCabalBuildDeps :: FilePath -> S.Set String -> IO (S.Set String)
-    findCabalBuildDeps fp anchorRepos = do
-        gpd <- readPackageDescription deafening fp
-        return $ S.intersection anchorRepos $ S.fromList $ concat $ concat
-            [ map extractDeps $ maybeToList $ condLibrary gpd
-            , map (extractDeps . snd) (condExecutables gpd)
-            , map (extractDeps . snd) (condTestSuites gpd)
+    findCabalBuildDeps :: FilePath -> IO (S.Set PackageName)
+    findCabalBuildDeps fp = do
+        GenericPackageDescription{..} <- readPackageDescription deafening fp
+        return . S.delete (pkgName . package $ packageDescription) . S.fromList . concat . concat $
+            [ map extractDeps . maybeToList $ condLibrary
+            , map (extractDeps . snd) condExecutables
+            , map (extractDeps . snd) condTestSuites
             ]
 
-    extractDeps = map (\(Dependency (PackageName n) _ ) -> n) . condTreeConstraints
+    extractDeps = map (\(Dependency n _ ) -> n) . condTreeConstraints
 
 extractDefaultCabalDetails :: IO CabalInfo
 extractDefaultCabalDetails = do
     target <- (!! 0) <$> getArgs
     extractCabalDetails (cabalPath target)
 
-cabalPath :: String -> FilePath
-cabalPath target = target <> "/" <> target <> ".cabal"
+cabalPath :: FilePath -> FilePath
+cabalPath target = target </> takeBaseName target <.> "cabal"
 
 extractCabalDetails :: FilePath -> IO CabalInfo
 extractCabalDetails fp = do
