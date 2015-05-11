@@ -7,6 +7,7 @@ import           Control.Monad.Reader
 import           Control.Monad.State.Lazy
 import           Data.Char
 import           Data.List
+import qualified Data.Map                              as M
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set                              as S
@@ -17,6 +18,7 @@ import           Distribution.PackageDescription.Parse
 import           Distribution.Verbosity
 import           Github.Auth
 import           Github.Repos
+import           Github.Search
 import           System.Directory
 import           System.Environment
 import           System.Exit
@@ -114,19 +116,26 @@ genPackagerInfo = do
     packageName <- lookupEnv "H2P_PACKAGE_NAME"
     homePath <- getEnv "HOME"
     workspacePath <- getEnv "WORKSPACE"
-    anchorRepos <- getAnchorRepos token
+    anchorRepos <- M.keysSet <$> getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
     anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
   where
     strip :: String -> String
     strip = reverse . dropWhile isSpace . reverse . dropWhile isSpace
-    getAnchorRepos :: String -> IO (S.Set String)
-    getAnchorRepos token = do
-        res <- organizationRepos' (Just $ GithubOAuth token) "anchor"
-        case res of
-            Left e -> fail $ show e
-            Right xs -> return . S.fromList . fmap repoName $ xs
+    getAnchorRepos :: GithubAuth -> IO (M.Map String (S.Set FilePath))
+    getAnchorRepos = go mempty 1
+      where
+        go :: M.Map String (S.Set FilePath) -> Int -> GithubAuth -> IO (M.Map String (S.Set FilePath))
+        go repos page token = do
+            res <- searchCode' (Just token) ("q=user:anchor+extension:cabal&page=" <> show page)
+            case res of
+                Left e -> fail $ show e
+                Right (SearchCodeResult {searchCodeCodes = []}) -> return repos
+                Right (SearchCodeResult {searchCodeCodes = codes}) ->
+                    return $ foldl' addCode repos codes
+        addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
+        addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
     cloneAndFindDeps :: String -> S.Set String -> IO (S.Set String)
     cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
