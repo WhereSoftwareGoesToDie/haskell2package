@@ -107,7 +107,7 @@ genPackagerInfo :: IO PackagerInfo
 genPackagerInfo = do
     setEnv "LANG" "en_US.UTF-8"
     sysDeps <- S.fromList <$> getArgs
-    token <- fmap strip <$> lookupEnv "OAUTH_TOKEN"
+    token <- strip <$> getEnv "OAUTH_TOKEN"
     buildNoString <- getEnv "BUILD_NUMBER"
     jobName <- getEnv "JOB_NAME"
     target <- fromMaybe jobName <$> lookupEnv "H2P_TARGET"
@@ -119,8 +119,15 @@ genPackagerInfo = do
     anchorDeps  <- cloneAndFindDeps target anchorRepos
     return PackagerInfo{..}
   where
+    strip :: String -> String
     strip = reverse . dropWhile isSpace . reverse . dropWhile isSpace
-    getAnchorRepos token = S.fromList <$> either (error . show) (map repoName) <$> organizationRepos' (GithubOAuth <$> token) "anchor"
+    getAnchorRepos :: String -> IO (S.Set String)
+    getAnchorRepos token = do
+        res <- organizationRepos' (Just $ GithubOAuth token) "anchor"
+        case res of
+            Left e -> fail $ show e
+            Right xs -> return . S.fromList . fmap repoName $ xs
+    cloneAndFindDeps :: String -> S.Set String -> IO (S.Set String)
     cloneAndFindDeps target anchorRepos = do
         startingDeps <- (\s -> s `S.difference` S.singleton target) <$>
                             findCabalBuildDeps (cabalPath target) anchorRepos
@@ -164,6 +171,7 @@ genPackagerInfo = do
                                     Nothing
                                     Nothing
 
+    findCabalBuildDeps :: FilePath -> S.Set String -> IO (S.Set String)
     findCabalBuildDeps fp anchorRepos = do
         gpd <- readPackageDescription deafening fp
         return $ S.intersection anchorRepos $ S.fromList $ concat $ concat
