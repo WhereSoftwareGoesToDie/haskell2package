@@ -14,6 +14,10 @@ import           Data.Version
 import           Distribution.Package
 import           Distribution.PackageDescription
 import           Distribution.PackageDescription.Parse
+import           Distribution.Simple.Compiler
+import           Distribution.Simple.GHC
+import           Distribution.Simple.PackageIndex
+import           Distribution.Simple.Program
 import           Distribution.Verbosity
 import           Github.Auth
 import           Github.Repos
@@ -117,7 +121,8 @@ genPackagerInfo = do
     workspacePath <- getEnv "WORKSPACE"
     anchorRepos <- getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    anchorDeps  <- cloneAndFindDeps target anchorRepos
+    installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] defaultProgramConfiguration
+    anchorDeps  <- cloneAndFindDeps target installed anchorRepos
     return PackagerInfo{..}
   where
     strip :: String -> String
@@ -135,8 +140,8 @@ genPackagerInfo = do
                     return $ foldl' addCode repos codes
         addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
         addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
-    cloneAndFindDeps :: String -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
-    cloneAndFindDeps target anchorRepos = do
+    cloneAndFindDeps :: String -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
+    cloneAndFindDeps target installed anchorRepos = do
         let anchorRepos' = do
                 (repo,cabal_files) <- M.toList anchorRepos
                 cabal_file <- S.toList cabal_files
@@ -152,10 +157,11 @@ genPackagerInfo = do
             | otherwise = do
                   let x = S.elemAt 0 missing
                       missing' = S.deleteAt 0 missing
-                  case M.lookup x anchorRepos' of
-                      Nothing -> loop anchorRepos' missing'
-                      Just (_,_,True) -> loop anchorRepos' missing'
-                      Just (repo,cabal_file,False) -> do
+                  case (lookupPackageName installed x, M.lookup x anchorRepos') of
+                      (_:_,_) -> loop anchorRepos' missing'
+                      (_,Nothing) -> loop anchorRepos' missing'
+                      (_,Just (_,_,True)) -> loop anchorRepos' missing'
+                      (_,Just (repo,cabal_file,False)) -> do
                           cloneCommand repo
                           new_missing <- findCabalBuildDeps $ repo </> cabal_file
                           loop (M.insert x (repo,cabal_file,True) anchorRepos') (missing' <> new_missing)
