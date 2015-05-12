@@ -121,7 +121,7 @@ genPackagerInfo = do
     workspacePath <- getEnv "WORKSPACE"
     anchorRepos <- getAnchorRepos (GithubOAuth token)
     cabalInfo   <- extractCabalDetails (cabalPath target)
-    (_,_,conf) <- configure deafening Nothing Nothing defaultProgramConfiguration 
+    (_,_,conf) <- configure deafening Nothing Nothing defaultProgramConfiguration
     installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] conf
     anchorDeps  <- cloneAndFindDeps target installed anchorRepos
     return PackagerInfo{..}
@@ -184,9 +184,9 @@ genPackagerInfo = do
         archiveCommand' pkg = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
-                                    , "--prefix=" <> pkg <> "/"
+                                    , "--prefix=" <> takeBaseName pkg <> "/"
                                     , "-o"
-                                    , "../" <> pkg <> ".tar.gz"
+                                    , "../" <> takeBaseName pkg <> ".tar.gz"
                                     , "HEAD"
                                     ]
                                     (Just pkg)
