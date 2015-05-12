@@ -186,7 +186,8 @@ genPackagerInfo = do
                                     [ "archive"
                                     , "--prefix=" <> takeBaseName pkg <> "/"
                                     , "-o"
-                                    , "../" <> takeBaseName pkg <> ".tar.gz"
+                                    , foldr1 (</>) (replicate (length (splitPath pkg)) "..")
+                                        </> takeBaseName pkg <> ".tar.gz"
                                     , "HEAD"
                                     ]
                                     (Just pkg)
