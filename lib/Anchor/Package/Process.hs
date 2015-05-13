@@ -42,8 +42,8 @@ packageDebian = do
             createDirectoryIfMissing True $ workspacePath </> "packages"
             createDirectoryIfMissing True $ target </> "debian/usr/bin"
             createDirectoryIfMissing True $ target </> "debian/DEBIAN"
-            setCurrentDirectory target
             callProcess "cabal" ["update"]
+            setCurrentDirectory target
             callProcess "cabal" ["sandbox", "init"]
             case S.toList anchorDeps of
                 [] -> return ()
@@ -140,7 +140,7 @@ genPackagerInfo = do
                 Right (SearchCodeResult {searchCodeCodes = codes}) ->
                     go (foldl' addCode repos codes) (page+1) token
         addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
-        addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton codePath) repos
+        addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton $ dropWhile (=='/') codePath) repos
     cloneAndFindDeps :: String -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
     cloneAndFindDeps target installed anchorRepos = do
         let anchorRepos' = do
@@ -168,7 +168,7 @@ genPackagerInfo = do
                           loop (M.insert x (repo,cabal_file,True) anchorRepos') (missing' <> new_missing)
 
         cloneCommand repo = do
-            exists <- doesFileExist repo
+            exists <- doesDirectoryExist repo
             unless exists $ callProcess
                 "git"
                 [ "clone"
