@@ -58,6 +58,7 @@ packageDebian = do
             writeFile controlPath control
             forM_ executablePaths
                 (\x -> callProcess "cp" [x, "debian/usr/bin/"])
+            callCommand "find scripts -type f -executable -exec cp {} debian/usr/bin/ \\;"
             hasExtraFiles <- doesDirectoryExist "files"
             when hasExtraFiles $ do
                 createDirectoryIfMissing True $ "debian/usr/share" </> target
