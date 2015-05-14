@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module Anchor.Package.Template where
 
