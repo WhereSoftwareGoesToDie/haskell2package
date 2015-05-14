@@ -90,10 +90,10 @@ packageCentos = do
         installSysDeps
         spec <- generateSpecFile
         liftIO $ do
-            let specPath = target </> target <> ".spec"
+            let specPath = takeBaseName target <.> "spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath </> "rpmbuild/SOURCES/")
-            callProcess "mv" [target <> "/../*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
+            callCommand $ unwords ["mv", workspacePath </> "*.tar.gz", homePath <> "/rpmbuild/SOURCES/"]
             callProcess "rpmdev-setuptree" []
             writeFile (homePath </> ".rpmmacros") "%debug_package %{nil}"
             callProcess "rpmbuild"
@@ -105,7 +105,7 @@ packageCentos = do
                     , specPath
                     ]
             createDirectoryIfMissing True $ workspacePath <> "/packages"
-            void $ system $ "cp " <> homePath </> "rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath </> "packages/"
+            callCommand $ "cp " <> homePath </> "rpmbuild/RPMS/x86_64/*.rpm " <> workspacePath </> "packages/"
   where
     installSysDeps = do
         deps <- map (<> "-devel") <$> (<> ["gmp", "zlib"]) <$> S.toList <$> sysDeps <$> ask
@@ -127,7 +127,7 @@ genPackagerInfo = do
     cabalInfo   <- extractCabalDetails (cabalPath target)
     (_,_,conf) <- configure deafening Nothing Nothing defaultProgramConfiguration
     installed   <- getInstalledPackages deafening [GlobalPackageDB, UserPackageDB] conf
-    anchorDeps  <- cloneAndFindDeps target installed anchorRepos
+    anchorDeps  <- cloneAndFindDeps target workspacePath installed anchorRepos
     return PackagerInfo{..}
   where
     strip :: String -> String
@@ -145,14 +145,14 @@ genPackagerInfo = do
                     go (foldl' addCode repos codes) (page+1) token
         addCode :: M.Map String (S.Set FilePath) -> Code -> M.Map String (S.Set FilePath)
         addCode repos Code{..} = M.insertWith (<>) (repoName codeRepo) (S.singleton $ dropWhile (=='/') codePath) repos
-    cloneAndFindDeps :: String -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
-    cloneAndFindDeps target installed anchorRepos = do
+    cloneAndFindDeps :: String -> FilePath -> PackageIndex -> M.Map String (S.Set FilePath) -> IO (S.Set FilePath)
+    cloneAndFindDeps target workspacePath installed anchorRepos = do
         let anchorRepos' = do
                 (repo,cabal_files) <- M.toList anchorRepos
                 cabal_file <- S.toList cabal_files
                 return (PackageName $ takeBaseName cabal_file, (repo,cabal_file,False))
         startingDeps <- findCabalBuildDeps (cabalPath target)
-        archiveCommand target
+        archiveCommand target workspacePath
         loop (M.fromList anchorRepos') startingDeps
       where
         loop anchorRepos' missing
@@ -176,22 +176,21 @@ genPackagerInfo = do
             unless exists $ callProcess
                 "git"
                 [ "clone"
-                , "git@github.com:anchor" </> repo <> ".git"
+                , "git@github.com:anchor" </> repo <.> "git"
                 ]
 
-        archiveCommand pkg = do
-            res <- archiveCommand' pkg
+        archiveCommand pkg path = do
+            res <- archiveCommand' pkg path
             case res of
                 ExitSuccess -> return ()
                 e@(ExitFailure _) -> fail $ show e
 
-        archiveCommand' pkg = waitForProcess =<< runProcess
+        archiveCommand' pkg path = waitForProcess =<< runProcess
                                     "git"
                                     [ "archive"
                                     , "--prefix=" <> takeBaseName pkg <> "/"
                                     , "-o"
-                                    , foldr1 (</>) (replicate (length (splitPath pkg)) "..")
-                                        </> takeBaseName pkg <> ".tar.gz"
+                                    , path </> takeBaseName pkg <.> "tar.gz"
                                     , "HEAD"
                                     ]
                                     (Just pkg)
