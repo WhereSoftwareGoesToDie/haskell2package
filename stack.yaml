@@ -1,0 +1,7 @@
+flags: {}
+packages:
+- '.'
+extra-deps:
+- github-0.13.2
+- failure-0.2.0.3
+resolver: lts-2.18
