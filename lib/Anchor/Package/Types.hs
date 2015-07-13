@@ -10,6 +10,7 @@ data CabalInfo = CabalInfo
     , descriptionString :: String
     , maintainerString  :: String
     , executableNames   :: [String]
+    , dataFileNames     :: [String]
     } deriving Show
 
 data PackagerInfo = PackagerInfo

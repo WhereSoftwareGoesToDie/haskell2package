@@ -224,9 +224,10 @@ extractCabalDetails fp = do
     let pd = packageDescription gpd
     let (PackageIdentifier (PackageName pName) pVer) = package pd
     return $ CabalInfo
-                pName
-                (showVersion pVer)
-                (synopsis    pd)
-                (description pd)
-                (maintainer  pd)
-                (map fst $ condExecutables gpd)
+             pName
+             (showVersion pVer)
+             (synopsis    pd)
+             (description pd)
+             (maintainer  pd)
+             (map fst $ condExecutables gpd)
+             (dataFiles   pd)
