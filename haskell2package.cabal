@@ -1,5 +1,5 @@
 name:                haskell2package
-version:             1.4.0
+version:             1.3.0
 synopsis:            Builds .rpms and .debs from Haskell projects
 description:         Parses cabal files and generates a specfile or control file,
                      which is then used to build an rpm or deb respectively,
