@@ -47,8 +47,8 @@ generateM4 = do
             , ("DEB_DESC",    concatMap (' ':) $ lines descriptionString)
             , ("SRCS",        srcStrings)
             , ("SETUP",       setupStrings)
-            , ("COPYS",       generateCopyStrings executableNames)
-            , ("FILES",       generateFileStrings executableNames)
+            , ("COPYS",       generateCopyStrings executableNames dataFileNames)
+            , ("FILES",       generateFileStrings executableNames dataFileNames)
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
@@ -62,11 +62,17 @@ generateM4 = do
                , "changequote(<<, >>)dnl"
                , "dnl"
                ]
-    generateCopyStrings :: [String] -> String
-    generateCopyStrings = unlines . map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
+    generateCopyStrings :: [String] -> [String] -> String
+    generateCopyStrings execs datas = executableStrings execs <> dataStrings datas
+      where
+        executableStrings = unlines . map (\x -> "cp -v dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
+        dataStrings = unlines . map (\x -> "cp -v " <> x <> "/" <> x <> " %{buildroot}%{_datadir}")
 
-    generateFileStrings :: [String] -> String
-    generateFileStrings = unlines . map (\x -> "%{_bindir}/" <> x)
+    generateFileStrings :: [String] -> [String] -> String
+    generateFileStrings execs datas = executableStrings execs <> dataStrings datas
+      where
+        executableStrings = unlines . map (\x -> "%{_bindir}/" <> x)
+        dataStrings = unlines . map (\x -> "%{_datadir}/" <> x)
 
     generateSandboxStrings :: [String] -> String
     generateSandboxStrings = unlines . map (\x -> "cabal sandbox add-source ../" <> x)
