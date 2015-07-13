@@ -25,8 +25,6 @@ SETUP()%setup -T -D -n NAME() -b 0
 
 %build
 export LC_ALL=en_US.UTF-8
-cabal list > /dev/null
-sed -r -i "s,^(remote-repo: hackage.haskell.org.*)$,\1\nremote-repo: hackage.syd1.anchor.net.au:http://hackage.syd1.anchor.net.au/packages/archive," /home/jenkins/.cabal/config
 
 cabal update
 cabal sandbox init
