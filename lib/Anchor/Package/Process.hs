@@ -39,10 +39,11 @@ packageDebian = do
         PackagerInfo{..} <- ask
         let CabalInfo{..} = cabalInfo
         let executablePaths = map (\x -> "dist/build" </> x </> x) executableNames
-        let dataDir = "debian/usr/share" </> name
+        let dataDir = "debian/usr/share" </> target
+        let binDir = "debian/usr/bin"
         liftIO $ do
             createDirectoryIfMissing True $ workspacePath </> "packages"
-            createDirectoryIfMissing True $ target </> "debian/usr/bin"
+            createDirectoryIfMissing True $ target </> binDir
             createDirectoryIfMissing True $ target </> dataDir
             createDirectoryIfMissing True $ target </> "debian/DEBIAN"
             callProcess "cabal" ["update"]
@@ -60,7 +61,7 @@ packageDebian = do
             let controlPath = "debian/DEBIAN/control"
             writeFile controlPath control
             forM_ executablePaths
-                (\x -> callProcess "cp" [x, "debian/usr/bin/"])
+                (\x -> callProcess "cp" [x, binDir])
             forM_ dataFileNames
                 (\x -> callProcess "cp" [x, dataDir])
             exists <- doesDirectoryExist "scripts"
