@@ -63,7 +63,8 @@ packageDebian = do
             forM_ executablePaths
                 (\x -> callProcess "cp" [x, binDir])
             forM_ dataFileNames
-                (\x -> callProcess "cp" [x, dataDir])
+                -- oh exploitable
+                (\x -> callProcess "bash" ["-c", "cp " <> x <> " " <> dataDir])
             exists <- doesDirectoryExist "scripts"
             when exists $
                 callCommand "find scripts -type f -executable -exec cp {} debian/usr/bin/ \\;"
