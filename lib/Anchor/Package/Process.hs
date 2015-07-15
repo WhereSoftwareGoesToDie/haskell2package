@@ -233,8 +233,8 @@ extractCabalDetails fp = do
              (dataFiles   pd)
 
 -- | Copy a data-file (possibly deep within the repository) to the
---   equivalent place in the provided destination tree (i.e., like
---   `install -d`).
+--   equivalent place in the provided destination tree, creating it if
+--   it doesn't exist.
 --
 --   Calls `bash -c` to deal with globbing; if you call this on
 --   untrusted input, you wil be fired, and then you will die.
