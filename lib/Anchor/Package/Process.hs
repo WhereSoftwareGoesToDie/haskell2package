@@ -62,9 +62,7 @@ packageDebian = do
             writeFile controlPath control
             forM_ executablePaths
                 (\x -> callProcess "cp" [x, binDir])
-            forM_ dataFileNames
-                -- oh exploitable
-                (\x -> callProcess "bash" ["-c", "cp " <> x <> " " <> dataDir])
+            forM_ dataFileNames (copyDataFile dataDir)
             exists <- doesDirectoryExist "scripts"
             when exists $
                 callCommand "find scripts -type f -executable -exec cp {} debian/usr/bin/ \\;"
@@ -83,6 +81,8 @@ packageDebian = do
         let libs' = nub . sort . map takeFileName . lines $ libs
         pkgs <- readProcess "dpkg" ("-S" : libs') ""
         return (sort . nub . fmap (takeWhile (/= ':')) . lines $ pkgs)
+
+
 
 packageCentos :: IO ()
 packageCentos = do
@@ -233,3 +233,15 @@ extractCabalDetails fp = do
              (maintainer  pd)
              (map fst $ condExecutables gpd)
              (dataFiles   pd)
+
+-- | Copy a data-file (possibly deep within the repository) to the
+--   equivalent place in the provided destination tree (i.e., like
+--   `install -d`).
+--
+--   Calls `bash -c` to deal with globbing; if you call this on
+--   untrusted input, you wil be fired, and then you will die.
+copyDataFile :: FilePath -> String -> IO ()
+copyDataFile dataDir source = let (sourceDir, fileName) = splitFileName source
+                                  destDir               = dataDir </> sourceDir in do
+    createDirectoryIfMissing True destDir
+    callProcess "bash" ["-c", "cp -a" <> source <> " " <> destDir]
