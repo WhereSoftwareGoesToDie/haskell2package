@@ -12,6 +12,7 @@ import           Data.Monoid
 import qualified Data.Set               as S
 import           Data.Time.Clock
 import           Data.Time.Format
+import           System.FilePath.Posix
 import           System.Locale
 import           System.Process
 
@@ -63,16 +64,15 @@ generateM4 = do
                , "dnl"
                ]
     generateCopyStrings :: [String] -> [String] -> String
-    generateCopyStrings execs datas = executableStrings execs <> dataStrings datas
+    generateCopyStrings execs datas = executableStrings execs <> generateDataCopyStrings datas
       where
         executableStrings = unlines . map (\x -> "cp -va dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
-        dataStrings = unlines . map (\x -> "cp -va " <> x <> "/" <> x <> " %{buildroot}%{_datadir}")
 
     generateFileStrings :: [String] -> [String] -> String
     generateFileStrings execs datas = executableStrings execs <> dataStrings datas
       where
         executableStrings = unlines . map (\x -> "%{_bindir}/" <> x)
-        dataStrings = unlines . map (\x -> "%{_datadir}/" <> x)
+        dataStrings = unlines . map (uncurry combine . dataFilePath)
 
     generateSandboxStrings :: [String] -> String
     generateSandboxStrings = unlines . map (\x -> "cabal sandbox add-source ../" <> x)
@@ -95,3 +95,20 @@ generateM4 = do
 
     generateDefineStatement :: (String, String) -> String
     generateDefineStatement (macroName, value) = "define(<<" <> macroName <> ">>, <<" <> value <> ">>)dnl"
+
+    -- | Given a path to a datafile (relative to the project root),
+    --   return a pair of (destDir, filename), where destDir is the
+    --   destination for project data files relativised with RPM
+    --   macros and filename is the literal filename component of the
+    --   path.
+    dataFilePath :: String -> (String, String)
+    dataFilePath sauce = let (sauceDir, sauceFilename) = splitFileName sauce in
+                             ("{_datadir}" </> sauceDir, sauceFilename)
+
+    generateDataCopyStrings :: [String] -> String
+    generateDataCopyStrings = unlines . map genCopy
+      where
+        genCopy :: String -> String
+        genCopy sauce = let (dataDir, _) = dataFilePath sauce
+                            destDir = "%{buildroot}" </> dataDir in
+                        "mkdir -p " <> destDir <> " && cp -av " <> sauce <> " " <> destDir
