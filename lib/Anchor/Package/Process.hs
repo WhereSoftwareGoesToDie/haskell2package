@@ -68,10 +68,6 @@ packageDebian = do
             exists <- doesDirectoryExist "scripts"
             when exists $
                 callCommand "find scripts -type f -executable -exec cp {} debian/usr/bin/ \\;"
-            hasExtraFiles <- doesDirectoryExist "files"
-            when hasExtraFiles $ do
-                createDirectoryIfMissing True $ "debian/usr/share" </> target
-                void $ system $ "cp files/* -a debian/usr/share" </> target
             setCurrentDirectory "debian"
             md5s <- readProcess "bash" ["-c", "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\""] ""
             writeFile "DEBIAN/md5sums" md5s
