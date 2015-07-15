@@ -82,8 +82,6 @@ packageDebian = do
         pkgs <- readProcess "dpkg" ("-S" : libs') ""
         return (sort . nub . fmap (takeWhile (/= ':')) . lines $ pkgs)
 
-
-
 packageCentos :: IO ()
 packageCentos = do
     packagerInfo <- genPackagerInfo
