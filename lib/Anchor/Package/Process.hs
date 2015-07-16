@@ -242,4 +242,4 @@ copyDataFile :: FilePath -> String -> IO ()
 copyDataFile dataDir source = let (sourceDir, fileName) = splitFileName source
                                   destDir               = dataDir </> sourceDir in do
     createDirectoryIfMissing True destDir
-    callProcess "bash" ["-c", "cp -a" <> source <> " " <> destDir]
+    callProcess "bash" ["-c", "cp -a " <> source <> " " <> destDir]
