@@ -66,7 +66,7 @@ generateM4 = do
     generateCopyStrings :: [String] -> [String] -> String
     generateCopyStrings execs datas = executableStrings execs <> generateDataCopyStrings datas
       where
-        executableStrings = unlines . map (\x -> "cp -va dist/build/" <> x <> "/" <> x <> " %{buildroot}%{_bindir}")
+        executableStrings = unlines . map (\x -> "cp -va dist/build/" <> x </> x <> " %{buildroot}%{_bindir}")
 
     generateFileStrings :: [String] -> [String] -> String
     generateFileStrings execs datas = executableStrings execs <> dataStrings datas
