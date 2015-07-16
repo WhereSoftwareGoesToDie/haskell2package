@@ -19,10 +19,10 @@ import           System.Process
 import           Anchor.Package.Types
 
 generateSpecFile :: Packager String
-generateSpecFile = generateTemplate "/usr/share/haskell2package/TEMPLATE.spec"
+generateSpecFile = generateTemplate "/usr/share/haskell2package/templates/TEMPLATE.spec"
 
 generateControlFile :: Packager String
-generateControlFile = generateTemplate "/usr/share/haskell2package/control"
+generateControlFile = generateTemplate "/usr/share/haskell2package/templates/control"
 
 generateTemplate :: FilePath -> Packager String
 generateTemplate templatePath = do

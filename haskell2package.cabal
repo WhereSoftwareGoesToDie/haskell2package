@@ -14,8 +14,8 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.18
 
-data-files:          files/*.spec
-                     files/control
+data-files:          templates/*.spec
+                     templates/control
 
 source-repository    head
    type:             git
