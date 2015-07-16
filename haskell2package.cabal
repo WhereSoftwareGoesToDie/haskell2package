@@ -14,6 +14,9 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.18
 
+data-files:          templates/*.spec
+                     templates/control
+
 source-repository    head
    type:             git
    location:         git@github.com:anchor/haskell2package.git

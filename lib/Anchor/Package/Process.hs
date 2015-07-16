@@ -62,16 +62,10 @@ packageDebian = do
             writeFile controlPath control
             forM_ executablePaths
                 (\x -> callProcess "cp" [x, binDir])
-            forM_ dataFileNames
-                -- oh exploitable
-                (\x -> callProcess "bash" ["-c", "cp " <> x <> " " <> dataDir])
+            forM_ dataFileNames (copyDataFile dataDir)
             exists <- doesDirectoryExist "scripts"
             when exists $
                 callCommand "find scripts -type f -executable -exec cp {} debian/usr/bin/ \\;"
-            hasExtraFiles <- doesDirectoryExist "files"
-            when hasExtraFiles $ do
-                createDirectoryIfMissing True $ "debian/usr/share" </> target
-                void $ system $ "cp files/* -a debian/usr/share" </> target
             setCurrentDirectory "debian"
             md5s <- readProcess "bash" ["-c", "find -type f -print0 | xargs -0 md5sum | sed -r \"s# \\./# #\""] ""
             writeFile "DEBIAN/md5sums" md5s
@@ -237,3 +231,15 @@ extractCabalDetails fp = do
              (maintainer  pd)
              (map fst $ condExecutables gpd)
              (dataFiles   pd)
+
+-- | Copy a data-file (possibly deep within the repository) to the
+--   equivalent place in the provided destination tree, creating it if
+--   it doesn't exist.
+--
+--   Calls `bash -c` to deal with globbing; if you call this on
+--   untrusted input, you will be fired, and then you will die.
+copyDataFile :: FilePath -> String -> IO ()
+copyDataFile dataDir source = let (sourceDir, fileName) = splitFileName source
+                                  destDir               = dataDir </> sourceDir in do
+    createDirectoryIfMissing True destDir
+    callProcess "bash" ["-c", "cp -a" <> source <> " " <> destDir]
