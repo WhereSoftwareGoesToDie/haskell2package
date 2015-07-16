@@ -71,7 +71,7 @@ generateM4 = do
     generateFileStrings :: [String] -> [String] -> String
     generateFileStrings execs datas = executableStrings execs <> dataStrings datas
       where
-        executableStrings = unlines . map (\x -> "%{_bindir}/" <> x)
+        executableStrings = unlines . map (\x -> "%{_bindir}" </> x)
         dataStrings = unlines . map (uncurry combine . dataFilePath)
 
     generateSandboxStrings :: [String] -> String
