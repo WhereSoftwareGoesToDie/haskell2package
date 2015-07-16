@@ -237,7 +237,7 @@ extractCabalDetails fp = do
 --   it doesn't exist.
 --
 --   Calls `bash -c` to deal with globbing; if you call this on
---   untrusted input, you wil be fired, and then you will die.
+--   untrusted input, you will be fired, and then you will die.
 copyDataFile :: FilePath -> String -> IO ()
 copyDataFile dataDir source = let (sourceDir, fileName) = splitFileName source
                                   destDir               = dataDir </> sourceDir in do
