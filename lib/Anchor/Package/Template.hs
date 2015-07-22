@@ -103,7 +103,7 @@ generateM4 = do
     --   path.
     dataFilePath :: String -> (String, String)
     dataFilePath sauce = let (sauceDir, sauceFilename) = splitFileName sauce in
-                             ("{_datadir}" </> sauceDir, sauceFilename)
+                             ("%{_datadir}" </> sauceDir, sauceFilename)
 
     generateDataCopyStrings :: [String] -> String
     generateDataCopyStrings = unlines . map genCopy
