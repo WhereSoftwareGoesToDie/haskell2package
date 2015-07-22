@@ -90,6 +90,8 @@ packageCentos = do
         installSysDeps
         spec <- generateSpecFile
         liftIO $ do
+            putStrLn "Using spec file:"
+            putStrLn spec
             let specPath = takeBaseName target <.> "spec"
             writeFile specPath spec
             createDirectoryIfMissing True (homePath </> "rpmbuild/SOURCES/")
