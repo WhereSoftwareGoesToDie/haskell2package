@@ -158,7 +158,9 @@ genPackagerInfo = do
         loop anchorRepos' missing
             | S.null missing = return . S.fromList $ do
                   (repo,cabal_file,True) <- M.elems anchorRepos'
-                  return $ repo </> takeDirectory cabal_file
+                  return $ case takeDirectory cabal_file of
+                      "."    -> repo
+                      subdir -> repo </> subdir
             | otherwise = do
                   let x = S.elemAt 0 missing
                       missing' = S.deleteAt 0 missing
