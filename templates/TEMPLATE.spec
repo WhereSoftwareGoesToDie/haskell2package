@@ -40,7 +40,6 @@ mkdir -p %{buildroot}%{_datadir}
 COPYS()
 %files
 %defattr(-,root,root,-)
-%{_datadir}/*
 FILES()
 %changelog
 * CHANGELOG_HEADING()
