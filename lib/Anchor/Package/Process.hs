@@ -170,6 +170,7 @@ genPackagerInfo = do
                       (_,Just (_,_,True)) -> loop anchorRepos' missing'
                       (_,Just (repo,cabal_file,False)) -> do
                           cloneCommand repo
+                          archiveCommand repo workspacePath
                           new_missing <- findCabalBuildDeps $ repo </> cabal_file
                           loop (M.insert x (repo,cabal_file,True) anchorRepos') (missing' <> new_missing)
 
