@@ -48,8 +48,8 @@ generateM4 = do
             , ("DEB_DESC",    concatMap (' ':) $ lines descriptionString)
             , ("SRCS",        srcStrings)
             , ("SETUP",       setupStrings)
-            , ("COPYS",       generateCopyStrings executableNames dataFileNames)
-            , ("FILES",       generateFileStrings executableNames dataFileNames)
+            , ("COPYS",       generateCopyStrings name executableNames dataFileNames)
+            , ("FILES",       generateFileStrings name executableNames dataFileNames)
             , ("ADD_SRCS",    generateSandboxStrings $ S.toList anchorDeps)
             , ("BUILD_REQS",  generateBuildReqs      $ S.toList sysDeps)
             , ("RUN_REQS",    generateRunReqs        $ S.toList sysDeps)
@@ -63,16 +63,16 @@ generateM4 = do
                , "changequote(<<, >>)dnl"
                , "dnl"
                ]
-    generateCopyStrings :: [String] -> [String] -> String
-    generateCopyStrings execs datas = executableStrings execs <> generateDataCopyStrings datas
+    generateCopyStrings :: String -> [String] -> [String] -> String
+    generateCopyStrings name execs datas = executableStrings execs <> generateDataCopyStrings name datas
       where
         executableStrings = unlines . map (\x -> "cp -va dist/build/" <> x </> x <> " %{buildroot}%{_bindir}")
 
-    generateFileStrings :: [String] -> [String] -> String
-    generateFileStrings execs datas = executableStrings execs <> dataStrings datas
+    generateFileStrings :: String -> [String] -> [String] -> String
+    generateFileStrings name execs datas = executableStrings execs <> dataStrings datas
       where
         executableStrings = unlines . map (\x -> "%{_bindir}" </> x)
-        dataStrings = unlines . map (uncurry combine . dataFilePath)
+        dataStrings = unlines . map (uncurry combine . dataFilePath name)
 
     generateSandboxStrings :: [String] -> String
     generateSandboxStrings = unlines . map (\x -> "cabal sandbox add-source ../" <> x)
@@ -101,14 +101,14 @@ generateM4 = do
     --   destination for project data files relativised with RPM
     --   macros and filename is the literal filename component of the
     --   path.
-    dataFilePath :: String -> (String, String)
-    dataFilePath sauce = let (sauceDir, sauceFilename) = splitFileName sauce in
-                             ("%{_datadir}" </> sauceDir, sauceFilename)
+    dataFilePath :: String -> String -> (String, String)
+    dataFilePath name sauce = let (sauceDir, sauceFilename) = splitFileName sauce in
+                                  ("%{_datadir}" </> name </> sauceDir, sauceFilename)
 
-    generateDataCopyStrings :: [String] -> String
-    generateDataCopyStrings = unlines . map genCopy
+    generateDataCopyStrings :: String -> [String] -> String
+    generateDataCopyStrings name = unlines . map genCopy
       where
         genCopy :: String -> String
-        genCopy sauce = let (dataDir, _) = dataFilePath sauce
-                            destDir = "%{buildroot}" </> dataDir in
-                        "mkdir -p " <> destDir <> " && cp -av " <> sauce <> " " <> destDir
+        genCopy sauce = let (dataDir, _) = dataFilePath name sauce
+                            destDir = "%{buildroot}" <> dataDir in
+                        "mkdir -p " <> destDir <> "\ncp -av " <> sauce <> " " <> destDir
